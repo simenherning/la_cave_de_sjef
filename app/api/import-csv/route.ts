@@ -14,8 +14,12 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServerClient()
 
-    // Upsert by iwine_id if available, otherwise insert
-    const withId = wines.filter(w => w.iwine_id)
+    // Deduplicate by iwine_id (keep last occurrence)
+    const seenIds = new Map<string, typeof wines[number]>()
+    for (const w of wines) {
+      if (w.iwine_id) seenIds.set(w.iwine_id, w)
+    }
+    const withId = Array.from(seenIds.values())
     const withoutId = wines.filter(w => !w.iwine_id)
 
     let inserted = 0
@@ -39,6 +43,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, parsed: wines.length, upserted: updated, inserted })
   } catch (err) {
     console.error(err)
-    return NextResponse.json({ error: String(err) }, { status: 500 })
+    const message = err instanceof Error ? err.message : JSON.stringify(err)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
