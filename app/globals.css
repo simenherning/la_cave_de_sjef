@@ -71,9 +71,12 @@ body {
   .detail-grid { grid-template-columns: 1fr; }
 }
 
+.show-mobile { display: none; }
+
 @media (max-width: 640px) {
   .main-wrap { padding: 14px 12px calc(24px + env(safe-area-inset-bottom)); }
   .hide-mobile { display: none !important; }
+  .show-mobile { display: block; }
   th { padding: 8px 6px; font-size: 10px; letter-spacing: 0.03em; }
   td { padding: 8px 6px; font-size: 13px; }
   /* Font under 16px i skjemafelt gir autozoom på iPhone — unngå det */
@@ -81,6 +84,13 @@ body {
   .btn { padding: 10px 14px; }
   h1 { font-size: 22px; }
   .info-label { width: 110px; }
+
+  /* Statustabellen i tellingen: lås kolonnebredder så nowrap-innhold ikke
+     presser tabellen bredere enn skjermen; vinnavnet ellipseres i stedet. */
+  .status-table { table-layout: fixed; width: 100%; }
+  .status-table th:nth-last-child(2), .status-table th:nth-last-child(3) { width: 42px; }
+  .status-table th:last-child { width: 104px; }
+  .status-table td:last-child { white-space: normal !important; font-size: 11px !important; }
 }
 
 .card {

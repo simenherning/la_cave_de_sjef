@@ -395,10 +395,12 @@ export default function TellingApp() {
           </div>
         )}
         <div className="card" style={{ overflowX: 'auto' }}>
-          <table>
+          <table className="status-table">
             <thead>
               <tr>
-                <th>Vin</th><th>Årgang</th><th>Str.</th>
+                <th>Vin</th>
+                <th className="hide-mobile">Årgang</th>
+                <th className="hide-mobile">Str.</th>
                 <th style={{ textAlign: 'right' }}>Forv.</th>
                 <th style={{ textAlign: 'right' }}>Talt</th>
                 <th>Status</th>
@@ -411,10 +413,13 @@ export default function TellingApp() {
                   <tr key={w.key}>
                     <td style={{ maxWidth: 260 }}>
                       <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.wine}</div>
-                      {w.producer && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{w.producer}</div>}
+                      {w.producer && <div className="hide-mobile" style={{ fontSize: 12, color: 'var(--text-muted)' }}>{w.producer}</div>}
+                      <div className="show-mobile" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        {[w.vintage, w.size].filter(Boolean).join(' · ')}
+                      </div>
                     </td>
-                    <td>{w.vintage}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{w.size}</td>
+                    <td className="hide-mobile">{w.vintage}</td>
+                    <td className="hide-mobile" style={{ whiteSpace: 'nowrap' }}>{w.size}</td>
                     <td style={{ textAlign: 'right' }}>{w.expectedQty}</td>
                     <td style={{ textAlign: 'right' }}>{w.countedQty}</td>
                     <td style={{ color: STATUS_COLORS[st], whiteSpace: 'nowrap', fontFamily: 'sans-serif', fontSize: 12 }}>
