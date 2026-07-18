@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Scanner from './Scanner'
 import {
-  buildEanMap, buildEanMapCsv, buildResultCsv, eanLookupKeys, parseEanMapFile, parseInventory,
+  buildEanMap, buildEanMapCsv, buildResultCsv, eanLookupKeys, parseInventory,
 } from '@/lib/telling/csv'
 import { fetchInventory, fetchLearnedEans, mergeLearnedEans, saveLearnedEan } from '@/lib/telling/inventory'
 import { clearSession, loadSession, saveSession } from '@/lib/telling/storage'
@@ -52,7 +52,6 @@ export default function TellingApp() {
   const [toast, setToast] = useState<{ msg: string; kind: 'ok' | 'warn' } | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [importWarnings, setImportWarnings] = useState<string[]>([])
-  const [eanFileMsg, setEanFileMsg] = useState<string | null>(null)
   const [dbLoading, setDbLoading] = useState(false)
 
   useEffect(() => {
@@ -167,7 +166,6 @@ export default function TellingApp() {
   async function handleInventoryFile(file: File) {
     setImportError(null)
     setImportWarnings([])
-    setEanFileMsg(null)
     try {
       const text = await file.text()
       const { wines, eanMap, warnings } = parseInventory(text)
@@ -188,7 +186,6 @@ export default function TellingApp() {
   async function handleFetchFromDb() {
     setImportError(null)
     setImportWarnings([])
-    setEanFileMsg(null)
     setDbLoading(true)
     try {
       const wines = await fetchInventory()
@@ -208,34 +205,6 @@ export default function TellingApp() {
       setImportError(e instanceof Error ? e.message : 'Ukjent feil ved henting fra databasen.')
     } finally {
       setDbLoading(false)
-    }
-  }
-
-  async function handleEanMapFile(file: File) {
-    if (!session) return
-    try {
-      const text = await file.text()
-      const map = parseEanMapFile(text)
-      let added = 0
-      update(s => {
-        // Filen kobler EAN → iWine; en iWine kan dekke flere størrelser
-        // (egne rader hos oss) — alle blir kandidater, valgarket viser størrelse.
-        const keysByIWine = new Map<string, string[]>()
-        for (const w of s.wines) {
-          if (w.iWine) (keysByIWine.get(w.iWine) ?? keysByIWine.set(w.iWine, []).get(w.iWine)!).push(w.key)
-        }
-        for (const [ean, iWines] of Object.entries(map)) {
-          for (const iWine of iWines) {
-            for (const key of keysByIWine.get(iWine) ?? []) {
-              const list = (s.eanMap[ean] ??= [])
-              if (!list.includes(key)) { list.push(key); added++ }
-            }
-          }
-        }
-      })
-      setEanFileMsg(`Lastet ${added} EAN-koblinger fra ${file.name}.`)
-    } catch (e) {
-      setEanFileMsg(e instanceof Error ? e.message : 'Kunne ikke lese EAN-koblingsfilen.')
     }
   }
 
@@ -318,7 +287,7 @@ export default function TellingApp() {
 
         {(!stored || showImport || session) && (
           <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>1. Hent inventaret</div>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>Hent inventaret</div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>
               Enklest: hent kjelleren rett fra databasen — CSV-en du importerer på{' '}
               <b>/import</b> (f.eks. på Mac-en) er da automatisk tilgjengelig her.
@@ -362,20 +331,6 @@ export default function TellingApp() {
                 <div><b>{progress.expected}</b> flasker</div>
                 <div><b>{session.wines.filter(w => w.knownEans.length > 0).length}</b> med kjent EAN</div>
               </div>
-            </div>
-
-            <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>2. Valgfritt: last inn fjorårets EAN-koblinger</div>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>
-                Vanligvis unødvendig — koblinger appen lærer lagres automatisk i databasen.
-              Bruk denne bare som backup, f.eks. hvis en telling ble gjort uten nett.
-              </div>
-              <input
-                type="file"
-                accept=".csv,text/csv"
-                onChange={e => { const f = e.target.files?.[0]; if (f) handleEanMapFile(f) }}
-              />
-              {eanFileMsg && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--accent)' }}>{eanFileMsg}</div>}
             </div>
 
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px 16px', fontSize: 16 }} onClick={() => setView('scan')}>
