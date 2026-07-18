@@ -213,12 +213,18 @@ export default function TellingApp() {
       const map = parseEanMapFile(text)
       let added = 0
       update(s => {
-        const known = new Set(s.wines.map(w => w.key))
+        // Filen kobler EAN → iWine; en iWine kan dekke flere størrelser
+        // (egne rader hos oss) — alle blir kandidater, valgarket viser størrelse.
+        const keysByIWine = new Map<string, string[]>()
+        for (const w of s.wines) {
+          if (w.iWine) (keysByIWine.get(w.iWine) ?? keysByIWine.set(w.iWine, []).get(w.iWine)!).push(w.key)
+        }
         for (const [ean, iWines] of Object.entries(map)) {
           for (const iWine of iWines) {
-            if (!known.has(iWine)) continue
-            const list = (s.eanMap[ean] ??= [])
-            if (!list.includes(iWine)) { list.push(iWine); added++ }
+            for (const key of keysByIWine.get(iWine) ?? []) {
+              const list = (s.eanMap[ean] ??= [])
+              if (!list.includes(key)) { list.push(key); added++ }
+            }
           }
         }
       })

@@ -19,7 +19,9 @@ export function mapDbWines(rows: DbWineRow[]): WineRow[] {
   return rows
     .filter(r => r.quantity > 0)
     .map(r => ({
-      key: r.iwine_id || `db-${r.id}`,
+      // Samme nøkkelskjema som parseInventory: iWine alene er ikke unik,
+      // fordi CT gjenbruker den på tvers av flaskestørrelser.
+      key: r.iwine_id ? `${r.iwine_id}|${r.size ?? ''}` : `db-${r.id}`,
       iWine: r.iwine_id ?? '',
       vintage: r.vintage != null ? String(r.vintage) : '',
       wine: r.name,

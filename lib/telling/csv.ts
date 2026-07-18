@@ -75,8 +75,9 @@ export function eanLookupKeys(ean: string): string[] {
 }
 
 /**
- * Parser en CellarTracker-inventareksport. Aggregerer til én rad per iWine
- * (CT skiller allerede årgang og størrelse som egne iWine-er).
+ * Parser en CellarTracker-inventareksport. Aggregerer til én rad per
+ * (iWine, størrelse) — CT skiller årganger som egne iWine-er, men gjenbruker
+ * samme iWine på tvers av flaskestørrelser.
  * Kaster Error med norsk melding hvis påkrevde kolonner mangler.
  */
 export function parseInventory(text: string): ImportResult {
@@ -110,9 +111,12 @@ export function parseInventory(text: string): ImportResult {
     const row = rows[r]
     const get = (field: string) => (col[field] >= 0 ? (row[col[field]] ?? '').trim() : '')
     const iWine = get('iWine')
-    // Uten iWine: syntetisk nøkkel per (årgang, vin, størrelse) — CT skiller
-    // uansett årgang/størrelse som egne viner, så dette gir samme granularitet.
-    const key = iWine || `${get('vintage')}|${get('wine')}|${get('size')}`.toLowerCase()
+    // Nøkkelen må inkludere størrelse: CT gjenbruker samme iWine for 750ml og
+    // 1,5L av samme vin (verifisert i denne kjelleren). Uten iWine brukes
+    // (årgang, vin, størrelse) — samme granularitet.
+    const key = iWine
+      ? `${iWine}|${get('size')}`
+      : `${get('vintage')}|${get('wine')}|${get('size')}`.toLowerCase()
     if (key === '||') { warnings.push(`Rad ${r + 1} mangler både iWine og vinnavn og ble hoppet over.`); continue }
 
     let qty = 1

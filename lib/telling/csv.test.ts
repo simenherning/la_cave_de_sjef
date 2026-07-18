@@ -58,6 +58,22 @@ test('parseInventory: per-vin-eksport med Quantity brukes direkte', () => {
   assert.equal(wines[0].expectedQty, 5)
 })
 
+// Verifisert i denne kjelleren: CT gjenbruker samme iWine for 750ml og 1,5L.
+test('parseInventory: samme iWine i to størrelser forblir to rader', () => {
+  const text = [
+    'iWine,Vintage,Wine,Size,Quantity',
+    '5502380,2024,"Yvon Métras Beaujolais",750ml,3',
+    '5502380,2024,"Yvon Métras Beaujolais",1.5L,2',
+  ].join('\n')
+  const { wines } = parseInventory(text)
+  assert.equal(wines.length, 2)
+  assert.deepEqual(wines.map(w => [w.key, w.size, w.expectedQty]), [
+    ['5502380|750ml', '750ml', 3],
+    ['5502380|1.5L', '1.5L', 2],
+  ])
+  assert.equal(wines.reduce((s, w) => s + w.expectedQty, 0), 5)
+})
+
 test('parseInventory: manglende påkrevd kolonne gir forklarende feil', () => {
   const text = 'iWine,Vintage,Wine\n111,2017,"Vin A"\n'
   assert.throws(() => parseInventory(text), /Size/)
@@ -104,7 +120,7 @@ test('mapDbWines: wines-tabellen mappes til tellingens datamodell', async () => 
   ])
   assert.equal(rows.length, 2) // quantity 0 filtreres bort
   assert.deepEqual(rows[0], {
-    key: '3051601', iWine: '3051601', vintage: '2017', wine: 'Clos des Ducs',
+    key: '3051601|750ml', iWine: '3051601', vintage: '2017', wine: 'Clos des Ducs',
     producer: 'Angerville', size: '750ml', expectedQty: 3, countedQty: 0, knownEans: [],
   })
   assert.equal(rows[1].key, 'db-2')
