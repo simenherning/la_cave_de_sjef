@@ -2,6 +2,7 @@
 // slik at CSV-import på Mac (via /import) automatisk er tilgjengelig på mobil.
 
 import { supabase } from '../supabase.ts'
+import { normalizeEan } from './csv.ts'
 import type { WineRow } from './types.ts'
 
 export interface DbWineRow {
@@ -12,6 +13,7 @@ export interface DbWineRow {
   producer: string | null
   size: string | null
   quantity: number
+  upc: string | null
 }
 
 /** Ren mapping fra wines-tabellen til tellingens datamodell (testbar uten nett). */
@@ -29,14 +31,14 @@ export function mapDbWines(rows: DbWineRow[]): WineRow[] {
       size: r.size ?? '',
       expectedQty: r.quantity,
       countedQty: 0,
-      knownEans: [],
+      knownEans: r.upc && normalizeEan(r.upc) ? [normalizeEan(r.upc)] : [],
     }))
 }
 
 export async function fetchInventory(): Promise<WineRow[]> {
   const { data, error } = await supabase
     .from('wines')
-    .select('id, iwine_id, vintage, name, producer, size, quantity')
+    .select('id, iwine_id, vintage, name, producer, size, quantity, upc')
     .gt('quantity', 0)
     .order('producer', { ascending: true })
   if (error) {

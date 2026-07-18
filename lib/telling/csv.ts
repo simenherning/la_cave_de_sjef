@@ -36,9 +36,11 @@ function normalizeHeader(h: string): string {
 }
 
 // Kolonnesynonymer i CT-eksport (normalisert: lowercase, uten mellomrom).
-// VIKTIG: CT-feltet "Barcode" er CTs interne per-flaske-ID (11 siffer) og har
-// ingenting med EAN å gjøre. EAN ligger i "Wine Barcode". "barcode" skal derfor
-// IKKE stå i EAN-listen — det ignoreres med vilje.
+// VIKTIG — to feller (begge verifisert mot ekte CT-eksporter):
+//  - "Barcode" er CTs interne per-flaske-ID (11 siffer) — ikke EAN.
+//  - "WineBarcode" (xlquery-eksporten) er CTs interne vin-etikett på formen
+//    W<iWine>_<størrelse> — heller ikke EAN.
+// EAN ligger i kolonnen "UPC". Ingen av de to over skal stå i EAN-listen.
 const COLUMN_SYNONYMS: Record<string, string[]> = {
   iWine: ['iwine'],
   vintage: ['vintage'],
@@ -46,7 +48,7 @@ const COLUMN_SYNONYMS: Record<string, string[]> = {
   producer: ['producer'],
   size: ['size', 'bottlesize'],
   quantity: ['quantity', 'inventory', 'qty'],
-  ean: ['winebarcode', 'upc', 'wineupc'],
+  ean: ['upc', 'ean', 'wineupc'],
 }
 
 // iWine er sterkt ønsket (gjør resultatet joinbart mot CT), men ikke alle
@@ -146,13 +148,19 @@ export function parseInventory(text: string): ImportResult {
   }
 
   const wines = Array.from(byKey.values())
+  return { wines, eanMap: buildEanMap(wines), warnings }
+}
+
+/** EAN → vin-nøkler, fra vinenes kjente EAN-er (CSV-import eller database). */
+export function buildEanMap(wines: WineRow[]): Record<string, string[]> {
   const eanMap: Record<string, string[]> = {}
   for (const w of wines) {
     for (const ean of w.knownEans) {
-      ;(eanMap[ean] ??= []).push(w.key)
+      const list = (eanMap[ean] ??= [])
+      if (!list.includes(w.key)) list.push(w.key)
     }
   }
-  return { wines, eanMap, warnings }
+  return eanMap
 }
 
 /**

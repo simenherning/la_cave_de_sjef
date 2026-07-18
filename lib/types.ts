@@ -4,6 +4,7 @@ export type WineCategory = 'Dry' | 'Sparkling' | 'Sweet' | 'Fortified' | 'Distil
 export interface Wine {
   id: number
   iwine_id: string | null
+  upc: string | null
   type: string | null
   color: string | null
   category: string | null

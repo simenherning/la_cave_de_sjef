@@ -25,6 +25,10 @@ export function parseCSVRow(headers: string[], values: string[]): Partial<Wine> 
 
   return {
     iwine_id: row['iWine'] || null,
+    // UPC (EAN) finnes bare i CTs klassiske eksport (xlquery). Utelat feltet
+    // helt når kolonnen mangler, så en senere import fra den nye eksport-
+    // dialogen ikke nuller ut lagrede EAN-er.
+    ...('UPC' in row ? { upc: row['UPC'] || null } : {}),
     type: row['Type'] || null,
     color: row['Color'] || null,
     category: row['Category'] || null,

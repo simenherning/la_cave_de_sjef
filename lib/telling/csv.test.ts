@@ -21,21 +21,23 @@ test('parseCsv: quoted felt med linjeskift', () => {
   assert.deepEqual(rows, [['a', 'b'], ['linje1\nlinje2', 'x']])
 })
 
-// Den mest sannsynlige implementasjonsfeilen ifølge PRD §3: CT-feltet "Barcode"
-// er CTs interne per-flaske-ID (11 siffer) — IKKE EAN. EAN ligger i "Wine Barcode".
-test('Barcode-kolonnen (CTs per-flaske-ID) forveksles ALDRI med EAN', () => {
+// CT har TO barcode-feller (verifisert mot ekte eksporter): "Barcode" er CTs
+// per-flaske-ID (11 siffer), og "WineBarcode" (xlquery) er CTs vin-etikett på
+// formen W<iWine>_<størrelse>. Ingen av dem er EAN — EAN ligger i "UPC".
+test('Barcode og WineBarcode forveksles ALDRI med EAN — kun UPC brukes', () => {
   const text = [
-    'iWine,Vintage,Wine,Size,Quantity,Barcode,Wine Barcode',
-    '3051601,2017,"Angerville Clos des Ducs",750ml,1,01413525841,3760052440123',
-    '3051601,2017,"Angerville Clos des Ducs",750ml,1,01413525842,3760052440123',
+    'iWine,Vintage,Wine,Size,Quantity,Barcode,WineBarcode,UPC',
+    '3051601,2017,"Angerville Clos des Ducs",750ml,1,01413525841,W3051601_750ml,7070292956388',
+    '3051601,2017,"Angerville Clos des Ducs",750ml,1,01413525842,W3051601_750ml,7070292956388',
   ].join('\r\n')
   const { wines, eanMap } = parseInventory(text)
   assert.equal(wines.length, 1)
-  assert.deepEqual(wines[0].knownEans, ['3760052440123'])
-  // Per-flaske-ID-ene skal ikke finnes noe sted i EAN-oppslaget:
-  assert.deepEqual(Object.keys(eanMap), ['3760052440123'])
+  assert.deepEqual(wines[0].knownEans, ['7070292956388'])
+  // Verken flaske-ID-ene eller W-koden skal finnes i EAN-oppslaget:
+  assert.deepEqual(Object.keys(eanMap), ['7070292956388'])
   assert.ok(!('01413525841' in eanMap))
   assert.ok(!('1413525841' in eanMap))
+  assert.ok(!('3051601750' in eanMap)) // sifrene fra W3051601_750ml
 })
 
 test('parseInventory: per-flaske-eksport aggregeres til per iWine', () => {
@@ -114,17 +116,19 @@ test('normalizeEan og eanLookupKeys: EAN-8/UPC-A/EAN-13, UPC↔EAN-varianter', (
 test('mapDbWines: wines-tabellen mappes til tellingens datamodell', async () => {
   const { mapDbWines } = await import('./inventory.ts')
   const rows = mapDbWines([
-    { id: 1, iwine_id: '3051601', vintage: 2017, name: 'Clos des Ducs', producer: 'Angerville', size: '750ml', quantity: 3 },
-    { id: 2, iwine_id: null, vintage: null, name: 'Massandra', producer: null, size: null, quantity: 1 },
-    { id: 3, iwine_id: '999', vintage: 2020, name: 'Tom', producer: null, size: '750ml', quantity: 0 },
+    { id: 1, iwine_id: '3051601', vintage: 2017, name: 'Clos des Ducs', producer: 'Angerville', size: '750ml', quantity: 3, upc: '7070292956388' },
+    { id: 2, iwine_id: null, vintage: null, name: 'Massandra', producer: null, size: null, quantity: 1, upc: null },
+    { id: 3, iwine_id: '999', vintage: 2020, name: 'Tom', producer: null, size: '750ml', quantity: 0, upc: null },
+    { id: 4, iwine_id: '888', vintage: 2021, name: 'Rar UPC', producer: null, size: '750ml', quantity: 1, upc: 'W888_750ml' },
   ])
-  assert.equal(rows.length, 2) // quantity 0 filtreres bort
+  assert.equal(rows.length, 3) // quantity 0 filtreres bort
   assert.deepEqual(rows[0], {
     key: '3051601|750ml', iWine: '3051601', vintage: '2017', wine: 'Clos des Ducs',
-    producer: 'Angerville', size: '750ml', expectedQty: 3, countedQty: 0, knownEans: [],
+    producer: 'Angerville', size: '750ml', expectedQty: 3, countedQty: 0, knownEans: ['7070292956388'],
   })
   assert.equal(rows[1].key, 'db-2')
   assert.equal(rows[1].iWine, '')
+  assert.deepEqual(rows[2].knownEans, []) // ugyldig UPC-verdi filtreres
 })
 
 function makeSession(wines: WineRow[], eanMap: Session['eanMap'] = {}): Session {

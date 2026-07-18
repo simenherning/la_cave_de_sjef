@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Scanner from './Scanner'
 import {
-  buildEanMapCsv, buildResultCsv, eanLookupKeys, parseEanMapFile, parseInventory,
+  buildEanMap, buildEanMapCsv, buildResultCsv, eanLookupKeys, parseEanMapFile, parseInventory,
 } from '@/lib/telling/csv'
 import { fetchInventory } from '@/lib/telling/inventory'
 import { clearSession, loadSession, saveSession } from '@/lib/telling/storage'
@@ -194,7 +194,7 @@ export default function TellingApp() {
       const s: Session = {
         startedAt: new Date().toISOString(),
         inventoryFileName: 'kjellerdatabasen',
-        wines, eanMap: {}, scans: [],
+        wines, eanMap: buildEanMap(wines), scans: [],
       }
       saveSession(s)
       setSession(s)
