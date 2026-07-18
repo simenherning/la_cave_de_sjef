@@ -1,0 +1,630 @@
+'use client'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Scanner from './Scanner'
+import {
+  buildEanMapCsv, buildResultCsv, eanLookupKeys, parseEanMapFile, parseInventory,
+} from '@/lib/telling/csv'
+import { clearSession, loadSession, saveSession } from '@/lib/telling/storage'
+import type { ScanMethod, Session, WineRow } from '@/lib/telling/types'
+import { wineStatus, type WineStatus } from '@/lib/telling/types'
+
+type View = 'setup' | 'scan' | 'status'
+type Sheet =
+  | { kind: 'choice'; ean: string; keys: string[] }
+  | { kind: 'search'; ean: string | null }
+
+const STATUS_COLORS: Record<WineStatus, string> = {
+  OK: '#5a9b5a',
+  MANGLER: '#c4a35a',
+  IKKE_SKANNET: '#c4a35a',
+  OVERTALL: '#9b3a3a',
+  IKKE_I_CT: '#9b3a3a',
+}
+
+function remaining(w: WineRow): number {
+  return w.expectedQty - w.countedQty
+}
+
+function downloadCsv(filename: string, content: string) {
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 5000)
+}
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+export default function TellingApp() {
+  const [session, setSession] = useState<Session | null>(null)
+  const [stored, setStored] = useState<Session | null>(null)
+  const [showImport, setShowImport] = useState(false)
+  const [view, setView] = useState<View>('setup')
+  const [sheet, setSheet] = useState<Sheet | null>(null)
+  const [confirmKey, setConfirmKey] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ msg: string; kind: 'ok' | 'warn' } | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
+  const [importWarnings, setImportWarnings] = useState<string[]>([])
+  const [eanFileMsg, setEanFileMsg] = useState<string | null>(null)
+
+  useEffect(() => {
+    setStored(loadSession())
+  }, [])
+
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const showToast = useCallback((msg: string, kind: 'ok' | 'warn' = 'ok') => {
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    setToast({ msg, kind })
+    toastTimer.current = setTimeout(() => setToast(null), 2500)
+  }, [])
+
+  // Alt state lagres etter hver eneste endring (PRD: aldri mist mer enn siste skanning).
+  const update = useCallback((fn: (s: Session) => void) => {
+    setSession(prev => {
+      if (!prev) return prev
+      const next = structuredClone(prev)
+      fn(next)
+      saveSession(next)
+      return next
+    })
+  }, [])
+
+  const wineByKey = useMemo(
+    () => new Map((session?.wines ?? []).map(w => [w.key, w])),
+    [session?.wines],
+  )
+
+  const countWine = useCallback((key: string, ean: string | null, method: ScanMethod) => {
+    const w = wineByKey.get(key)
+    if (!w) return
+    update(s => {
+      const wine = s.wines.find(x => x.key === key)!
+      wine.countedQty++
+      if (ean && !s.eanMap[ean]?.includes(key)) (s.eanMap[ean] ??= []).push(key)
+      s.scans.push({ ts: new Date().toISOString(), ean, resolvedKey: key, method })
+    })
+    navigator.vibrate?.(60)
+    const counted = w.countedQty + 1
+    const label = [w.wine, w.vintage].filter(Boolean).join(' ')
+    if (counted > w.expectedQty && !w.notInCt) {
+      showToast(`⚠ ${label} — ${counted} av ${w.expectedQty} (overtall)`, 'warn')
+    } else {
+      showToast(`✓ ${label} — ${counted} av ${w.expectedQty}`)
+    }
+    setSheet(null)
+    setConfirmKey(null)
+  }, [update, wineByKey, showToast])
+
+  // Skanneløkke (PRD §5): auto → valgark → søk, avhengig av kandidater.
+  const handleEan = useCallback((ean: string) => {
+    if (!session) return
+    const keys = new Set<string>()
+    for (const k of eanLookupKeys(ean)) {
+      for (const key of session.eanMap[k] ?? []) {
+        if (wineByKey.has(key)) keys.add(key)
+      }
+    }
+    const candidates = Array.from(keys)
+    if (candidates.length === 0) {
+      setSheet({ kind: 'search', ean })
+    } else if (candidates.length === 1 && remaining(wineByKey.get(candidates[0])!) > 0) {
+      countWine(candidates[0], ean, 'auto')
+    } else {
+      // Flere kandidater, eller én kandidat som allerede er full (mulig overtall).
+      navigator.vibrate?.(30)
+      setSheet({ kind: 'choice', ean, keys: candidates })
+    }
+  }, [session, wineByKey, countWine])
+
+  // Bluetooth-skannere opptrer som tastatur: fang raske siffersekvenser + Enter
+  // globalt (ikke når et inputfelt har fokus).
+  useEffect(() => {
+    let buffer = ''
+    let lastKeyTs = 0
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+      const now = Date.now()
+      if (now - lastKeyTs > 100) buffer = ''
+      lastKeyTs = now
+      if (/^\d$/.test(e.key)) {
+        buffer += e.key
+      } else if (e.key === 'Enter' && [8, 12, 13].includes(buffer.length)) {
+        handleEan(buffer)
+        buffer = ''
+      } else {
+        buffer = ''
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [handleEan])
+
+  function undoScan(scanIndex: number) {
+    if (!session || scanIndex < 0 || scanIndex >= session.scans.length) return
+    const scan = session.scans[scanIndex]
+    const w = wineByKey.get(scan.resolvedKey)
+    update(s => {
+      const wine = s.wines.find(x => x.key === scan.resolvedKey)
+      if (wine && wine.countedQty > 0) wine.countedQty--
+      s.scans.splice(scanIndex, 1)
+    })
+    showToast(`Angret: ${w ? [w.wine, w.vintage].filter(Boolean).join(' ') : 'skanning'}`, 'warn')
+  }
+
+  async function handleInventoryFile(file: File) {
+    setImportError(null)
+    setImportWarnings([])
+    setEanFileMsg(null)
+    try {
+      const text = await file.text()
+      const { wines, eanMap, warnings } = parseInventory(text)
+      const s: Session = {
+        startedAt: new Date().toISOString(),
+        inventoryFileName: file.name,
+        wines, eanMap, scans: [],
+      }
+      saveSession(s)
+      setSession(s)
+      setStored(null)
+      setImportWarnings(warnings)
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : 'Ukjent feil ved parsing av CSV.')
+    }
+  }
+
+  async function handleEanMapFile(file: File) {
+    if (!session) return
+    try {
+      const text = await file.text()
+      const map = parseEanMapFile(text)
+      let added = 0
+      update(s => {
+        const known = new Set(s.wines.map(w => w.key))
+        for (const [ean, iWines] of Object.entries(map)) {
+          for (const iWine of iWines) {
+            if (!known.has(iWine)) continue
+            const list = (s.eanMap[ean] ??= [])
+            if (!list.includes(iWine)) { list.push(iWine); added++ }
+          }
+        }
+      })
+      setEanFileMsg(`Lastet ${added} EAN-koblinger fra ${file.name}.`)
+    } catch (e) {
+      setEanFileMsg(e instanceof Error ? e.message : 'Kunne ikke lese EAN-koblingsfilen.')
+    }
+  }
+
+  function addUnknownWine(name: string, ean: string | null) {
+    if (!session || !name.trim()) return
+    const key = `local-${Date.now()}`
+    update(s => {
+      s.wines.push({
+        key, iWine: '', vintage: '', wine: name.trim(), producer: '', size: '',
+        expectedQty: 0, countedQty: 1, knownEans: [], notInCt: true,
+      })
+      s.scans.push({ ts: new Date().toISOString(), ean, resolvedKey: key, method: ean ? 'manual' : 'noean' })
+    })
+    showToast(`✓ ${name.trim()} — lagt til (ikke i CT)`)
+    setSheet(null)
+  }
+
+  function startNew() {
+    if (!stored) { setShowImport(true); return }
+    const ok = window.confirm(
+      'Starte ny telling? Fremdriften fra forrige økt slettes. Eksporter resultatet først hvis du trenger det.'
+    )
+    if (!ok) return
+    clearSession()
+    setStored(null)
+    setShowImport(true)
+  }
+
+  // ---- Avledede tall ----
+  const progress = useMemo(() => {
+    if (!session) return { counted: 0, expected: 0, winesDone: 0, winesTotal: 0 }
+    let counted = 0, expected = 0, winesDone = 0, winesTotal = 0
+    for (const w of session.wines) {
+      counted += w.countedQty
+      expected += w.expectedQty
+      if (!w.notInCt) {
+        winesTotal++
+        if (w.expectedQty > 0 && w.countedQty >= w.expectedQty) winesDone++
+      }
+    }
+    return { counted, expected, winesDone, winesTotal }
+  }, [session])
+
+  const lastScans = useMemo(() => {
+    if (!session) return []
+    return session.scans
+      .map((scan, index) => ({ scan, index }))
+      .slice(-5)
+      .reverse()
+  }, [session])
+
+  // ================= RENDER =================
+
+  if (view === 'setup') {
+    return (
+      <div style={{ maxWidth: 560, margin: '0 auto' }}>
+        <h1 style={{ fontSize: 24, margin: '8px 0 4px' }}>Vintelling</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 20 }}>
+          Varetelling av kjelleren mot CellarTracker-eksport. Alt lagres lokalt på telefonen.
+        </p>
+
+        {stored && !session && (
+          <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>Fortsette forrige telling?</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
+              Startet {new Date(stored.startedAt).toLocaleString('no')} · {stored.inventoryFileName}<br />
+              {stored.scans.length} skanninger registrert
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="btn btn-primary" onClick={() => { setSession(stored); setView('scan') }}>
+                Fortsett forrige telling
+              </button>
+              <button className="btn btn-ghost" onClick={() => downloadCsv(`telling-resultat-${today()}.csv`, buildResultCsv(stored))}>
+                Eksporter resultat
+              </button>
+              <button className="btn btn-ghost" onClick={startNew}>Start ny</button>
+            </div>
+          </div>
+        )}
+
+        {(!stored || showImport || session) && (
+          <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>1. Last inn CellarTracker-eksport (CSV)</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>
+              CellarTracker: My Cellar → Export → CSV. Husk å inkludere kolonnen <b>iWine</b>.
+            </div>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleInventoryFile(f) }}
+            />
+            {importError && (
+              <div style={{ marginTop: 10, color: '#d47a7a', fontSize: 13 }}>{importError}</div>
+            )}
+            {importWarnings.length > 0 && (
+              <div style={{ marginTop: 10, color: 'var(--accent)', fontSize: 12 }}>
+                {importWarnings.slice(0, 5).map((w, i) => <div key={i}>{w}</div>)}
+                {importWarnings.length > 5 && <div>… og {importWarnings.length - 5} til.</div>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {session && (
+          <>
+            <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>Importert: {session.inventoryFileName}</div>
+              <div style={{ display: 'flex', gap: 20, fontSize: 14 }}>
+                <div><b>{session.wines.length}</b> viner</div>
+                <div><b>{progress.expected}</b> flasker</div>
+                <div><b>{session.wines.filter(w => w.knownEans.length > 0).length}</b> med kjent EAN</div>
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>2. Valgfritt: last inn fjorårets EAN-koblinger</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>
+                Filen «ean-koblinger-…csv» fra forrige telling. Gjør at tidligere identifiserte viner gjenkjennes automatisk.
+              </div>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleEanMapFile(f) }}
+              />
+              {eanFileMsg && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--accent)' }}>{eanFileMsg}</div>}
+            </div>
+
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px 16px', fontSize: 16 }} onClick={() => setView('scan')}>
+              Start skanning →
+            </button>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  if (!session) return null
+
+  if (view === 'status') {
+    const sorted = [...session.wines].sort((a, b) => {
+      const sa = wineStatus(a), sb = wineStatus(b)
+      const da = sa === 'OK' ? 0 : Math.abs(a.countedQty - a.expectedQty) || 1
+      const db = sb === 'OK' ? 0 : Math.abs(b.countedQty - b.expectedQty) || 1
+      if ((da === 0) !== (db === 0)) return da === 0 ? 1 : -1
+      if (da !== db) return db - da
+      return (a.producer + a.wine).localeCompare(b.producer + b.wine)
+    })
+    return (
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+          <h1 style={{ fontSize: 22, margin: 0 }}>Status · {progress.counted} av {progress.expected} flasker</h1>
+          <button className="btn btn-ghost" onClick={() => setView('scan')}>← Tilbake til skanning</button>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+          <button className="btn btn-primary" onClick={() => downloadCsv(`telling-resultat-${today()}.csv`, buildResultCsv(session))}>
+            Eksporter resultat (CSV)
+          </button>
+          <button className="btn btn-ghost" onClick={() => downloadCsv(`ean-koblinger-${today()}.csv`, buildEanMapCsv(session))}>
+            Eksporter EAN-koblinger (CSV)
+          </button>
+        </div>
+        <div className="card" style={{ overflowX: 'auto' }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Vin</th><th>Årgang</th><th>Str.</th>
+                <th style={{ textAlign: 'right' }}>Forv.</th>
+                <th style={{ textAlign: 'right' }}>Talt</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map(w => {
+                const st = wineStatus(w)
+                return (
+                  <tr key={w.key}>
+                    <td style={{ maxWidth: 260 }}>
+                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.wine}</div>
+                      {w.producer && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{w.producer}</div>}
+                    </td>
+                    <td>{w.vintage}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{w.size}</td>
+                    <td style={{ textAlign: 'right' }}>{w.expectedQty}</td>
+                    <td style={{ textAlign: 'right' }}>{w.countedQty}</td>
+                    <td style={{ color: STATUS_COLORS[st], whiteSpace: 'nowrap', fontFamily: 'sans-serif', fontSize: 12 }}>
+                      {st}{st !== 'OK' && st !== 'IKKE_I_CT' ? ` (${w.countedQty - w.expectedQty > 0 ? '+' : ''}${w.countedQty - w.expectedQty})` : ''}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  // ---- Skanneskjerm ----
+  const pct = progress.expected > 0 ? Math.min(100, (progress.counted / progress.expected) * 100) : 0
+  return (
+    <div style={{ maxWidth: 560, margin: '0 auto' }}>
+      <Scanner paused={sheet !== null} onDetect={handleEan} />
+
+      <div style={{ margin: '12px 0 4px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <div style={{ fontSize: 15 }}>
+          <b>{progress.counted} / {progress.expected} flasker</b>
+          <span style={{ color: 'var(--text-muted)' }}> · {progress.winesDone} viner ferdig</span>
+        </div>
+        <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 13 }} onClick={() => setView('status')}>
+          Status & eksport
+        </button>
+      </div>
+      <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, marginBottom: 12 }}>
+        <div style={{ height: 4, width: `${pct}%`, background: 'var(--accent)', borderRadius: 2, transition: 'width 0.3s' }} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setSheet({ kind: 'search', ean: null })}>
+          Uten strekkode
+        </button>
+        <button
+          className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }}
+          disabled={session.scans.length === 0}
+          onClick={() => undoScan(session.scans.length - 1)}
+        >
+          Angre siste
+        </button>
+      </div>
+
+      {lastScans.length > 0 && (
+        <div className="card">
+          {lastScans.map(({ scan, index }) => {
+            const w = wineByKey.get(scan.resolvedKey)
+            if (!w) return null
+            return (
+              <div key={scan.ts + scan.resolvedKey} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 14 }}>
+                    {[w.wine, w.vintage].filter(Boolean).join(' ')}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                    {w.countedQty} av {w.expectedQty}{w.size ? ` · ${w.size}` : ''}
+                  </div>
+                </div>
+                <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => undoScan(index)}>
+                  Angre
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {toast && (
+        <div style={{
+          position: 'fixed', top: 14, left: '50%', transform: 'translateX(-50%)',
+          maxWidth: 'calc(100vw - 32px)', zIndex: 100, padding: '10px 18px', borderRadius: 8,
+          background: toast.kind === 'ok' ? '#2e4a2e' : '#5a4420', color: 'var(--text)',
+          fontSize: 14, boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+        }}>
+          {toast.msg}
+        </div>
+      )}
+
+      {sheet?.kind === 'choice' && (
+        <BottomSheet onClose={() => { setSheet(null); setConfirmKey(null) }} title="Hvilken vin er dette?">
+          {sheet.keys.map(key => {
+            const w = wineByKey.get(key)
+            if (!w) return null
+            const rem = remaining(w)
+            const needsConfirm = rem <= 0
+            const armed = confirmKey === key
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  if (needsConfirm && !armed) { setConfirmKey(key); return }
+                  countWine(key, sheet.ean, 'choice')
+                }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left', padding: '14px 16px',
+                  background: armed ? '#4a3520' : 'transparent', border: 'none',
+                  borderBottom: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                <div style={{ fontSize: 15 }}>{[w.wine, w.vintage].filter(Boolean).join(' ')}</div>
+                <div style={{ fontSize: 13, color: needsConfirm ? '#d47a7a' : 'var(--text-muted)', marginTop: 2 }}>
+                  {w.size && `${w.size} · `}
+                  {armed
+                    ? 'Alle forventede er talt — trykk igjen for å bekrefte overtall'
+                    : needsConfirm ? `${w.countedQty} av ${w.expectedQty} talt (full!)` : `${rem} igjen`}
+                </div>
+              </button>
+            )
+          })}
+          <button
+            onClick={() => setSheet({ kind: 'search', ean: sheet.ean })}
+            style={{ display: 'block', width: '100%', textAlign: 'center', padding: 14, background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14 }}
+          >
+            Ingen av disse — søk i hele inventaret
+          </button>
+        </BottomSheet>
+      )}
+
+      {sheet?.kind === 'search' && (
+        <SearchSheet
+          wines={session.wines}
+          ean={sheet.ean}
+          confirmKey={confirmKey}
+          onArm={setConfirmKey}
+          onPick={(key) => countWine(key, sheet.ean, sheet.ean ? 'manual' : 'noean')}
+          onAddUnknown={(name) => addUnknownWine(name, sheet.ean)}
+          onClose={() => { setSheet(null); setConfirmKey(null) }}
+        />
+      )}
+    </div>
+  )
+}
+
+function BottomSheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 50 }} onClick={onClose}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)' }} />
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '75vh', overflowY: 'auto',
+          background: 'var(--bg-card)', borderTop: '1px solid var(--border)',
+          borderRadius: '16px 16px 0 0', paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ fontWeight: 600 }}>{title}</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function SearchSheet({ wines, ean, confirmKey, onArm, onPick, onAddUnknown, onClose }: {
+  wines: WineRow[]
+  ean: string | null
+  confirmKey: string | null
+  onArm: (key: string | null) => void
+  onPick: (key: string) => void
+  onAddUnknown: (name: string) => void
+  onClose: () => void
+}) {
+  const [query, setQuery] = useState('')
+  const [unknownMode, setUnknownMode] = useState(false)
+
+  const results = useMemo(() => {
+    // Aksent-ufølsomt søk: «petrus» skal treffe «Pétrus», «Metras» → «Métras».
+    const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    const tokens = fold(query).split(/\s+/).filter(Boolean)
+    const matches = wines.filter(w => {
+      if (w.notInCt) return false
+      const hay = fold(`${w.producer} ${w.wine} ${w.vintage} ${w.size}`)
+      return tokens.every(t => hay.includes(t))
+    })
+    // Mest sannsynlige først: rest > 0 og uten kjent EAN, deretter rest > 0, så resten.
+    const rank = (w: WineRow) =>
+      remaining(w) > 0 && w.knownEans.length === 0 ? 0 : remaining(w) > 0 ? 1 : 2
+    return matches
+      .sort((a, b) => rank(a) - rank(b) || (a.producer + a.wine).localeCompare(b.producer + b.wine))
+      .slice(0, 50)
+  }, [wines, query])
+
+  return (
+    <BottomSheet title={ean ? `Ukjent EAN ${ean} — hvilken vin?` : 'Flaske uten strekkode'} onClose={onClose}>
+      <div style={{ padding: '12px 16px' }}>
+        <input
+          autoFocus
+          placeholder="Søk på produsent eller vinnavn …"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+        />
+        {ean && (
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+            Valget lagres, så denne EAN-en gjenkjennes automatisk neste gang.
+          </div>
+        )}
+      </div>
+      {results.map(w => {
+        const rem = remaining(w)
+        const needsConfirm = rem <= 0
+        const armed = confirmKey === w.key
+        return (
+          <button
+            key={w.key}
+            onClick={() => {
+              if (needsConfirm && !armed) { onArm(w.key); return }
+              onPick(w.key)
+            }}
+            style={{
+              display: 'block', width: '100%', textAlign: 'left', padding: '12px 16px',
+              background: armed ? '#4a3520' : 'transparent', border: 'none',
+              borderBottom: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            <div style={{ fontSize: 14 }}>{[w.wine, w.vintage].filter(Boolean).join(' ')}</div>
+            <div style={{ fontSize: 12, color: needsConfirm ? '#d47a7a' : 'var(--text-muted)', marginTop: 2 }}>
+              {[w.producer, w.size].filter(Boolean).join(' · ')}
+              {' · '}
+              {armed ? 'Trykk igjen for å bekrefte overtall' : needsConfirm ? 'full!' : `${rem} igjen`}
+            </div>
+          </button>
+        )
+      })}
+      {results.length === 0 && query && (
+        <div style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: 14 }}>Ingen treff.</div>
+      )}
+      <div style={{ padding: '12px 16px' }}>
+        {unknownMode ? (
+          <form onSubmit={e => { e.preventDefault(); onAddUnknown(query) }} style={{ display: 'flex', gap: 8 }}>
+            <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={!query.trim()}>
+              Legg til «{query.trim() || '…'}» som ukjent vin
+            </button>
+          </form>
+        ) : (
+          <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setUnknownMode(true)}>
+            Vinen finnes ikke i CT — legg til ukjent vin
+          </button>
+        )}
+      </div>
+    </BottomSheet>
+  )
+}

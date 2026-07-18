@@ -7,6 +7,7 @@ const links = [
   { href: '/stats', label: 'Statistikk' },
   { href: '/drinking-window', label: 'Drikkevindu' },
   { href: '/purchase-plan', label: 'Innkjøpsplan' },
+  { href: '/telling', label: 'Telling' },
 ]
 
 export default function Nav() {
@@ -17,7 +18,7 @@ export default function Nav() {
       background: 'var(--bg-card)',
       padding: '0 20px',
     }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 0 }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 0, overflowX: 'auto', whiteSpace: 'nowrap' }}>
         <Link href="/" style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 18, marginRight: 32, textDecoration: 'none', padding: '16px 0' }}>
           La Cave de Sjef
         </Link>
