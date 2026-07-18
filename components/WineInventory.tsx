@@ -1,25 +1,70 @@
 'use client'
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, Upload, Filter } from 'lucide-react'
+import { Search, Upload, X } from 'lucide-react'
 import type { Wine } from '@/lib/types'
 import WineColorDot from './WineColorDot'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
-function drinkingStatus(wine: Wine): { label: string; color: string } {
-  if (!wine.begin_consume || !wine.end_consume) return { label: '—', color: 'var(--text-muted)' }
-  if (CURRENT_YEAR < wine.begin_consume) return { label: 'Vent', color: '#6b9eb5' }
-  if (CURRENT_YEAR > wine.end_consume) return { label: 'Passert', color: '#9b3a3a' }
+function drinkingStatus(wine: Wine): { label: string; color: string; key: string } {
+  if (!wine.begin_consume || !wine.end_consume) return { label: '—', color: 'var(--text-muted)', key: '' }
+  if (CURRENT_YEAR > wine.end_consume) return { label: 'Passert', color: '#9b3a3a', key: 'past-window' }
+  if (CURRENT_YEAR < wine.begin_consume) {
+    if (wine.begin_consume - CURRENT_YEAR <= 3) return { label: 'Drikk snart', color: '#c4803a', key: 'drink-soon' }
+    return { label: 'Vent', color: '#6b9eb5', key: 'hold' }
+  }
   const remaining = wine.end_consume - CURRENT_YEAR
-  if (remaining <= 2) return { label: 'Drikk snart', color: '#c4803a' }
-  return { label: 'Drikk nå', color: '#5a9b5a' }
+  if (remaining <= 2) return { label: 'Drikk snart', color: '#c4803a', key: 'drink-soon' }
+  return { label: 'Drikk nå', color: '#5a9b5a', key: 'drink-now' }
 }
 
-export default function WineInventory({ wines }: { wines: Wine[] }) {
+const STATUS_LABELS: Record<string, string> = {
+  'drink-now': 'Klar å drikke',
+  'drink-soon': 'Drikk snart',
+  'hold': 'Legg bort',
+  'past-window': 'Passert vindu',
+}
+
+interface Props {
+  wines: Wine[]
+  initialStatus?: string
+  initialColor?: string
+  initialCountry?: string
+  initialRegion?: string
+  initialVarietal?: string
+  initialDecade?: string
+}
+
+export default function WineInventory({
+  wines,
+  initialStatus,
+  initialColor,
+  initialCountry,
+  initialRegion,
+  initialVarietal,
+  initialDecade,
+}: Props) {
   const [search, setSearch] = useState('')
-  const [colorFilter, setColorFilter] = useState<string>('alle')
+  const [colorFilter, setColorFilter] = useState<string>(initialColor ?? 'alle')
   const [sortBy, setSortBy] = useState<string>('producer')
+  const [dimFilter] = useState<{ country?: string; region?: string; varietal?: string; status?: string; decade?: string }>({
+    country: initialCountry,
+    region: initialRegion,
+    varietal: initialVarietal,
+    status: initialStatus,
+    decade: initialDecade,
+  })
+
+  // Active filter label for the chip
+  const activeFilterLabel = initialStatus
+    ? STATUS_LABELS[initialStatus]
+    : initialColor ? initialColor
+    : initialCountry ? initialCountry
+    : initialRegion ? initialRegion
+    : initialVarietal ? initialVarietal
+    : initialDecade ? initialDecade
+    : null
 
   const filtered = useMemo(() => {
     let list = wines.filter(w => w.quantity > 0)
@@ -37,6 +82,22 @@ export default function WineInventory({ wines }: { wines: Wine[] }) {
 
     if (colorFilter !== 'alle') {
       list = list.filter(w => (w.color ?? '').toLowerCase() === colorFilter.toLowerCase())
+    }
+
+    if (dimFilter.status) {
+      list = list.filter(w => drinkingStatus(w).key === dimFilter.status)
+    }
+    if (dimFilter.country) {
+      list = list.filter(w => (w.country ?? '') === dimFilter.country)
+    }
+    if (dimFilter.region) {
+      list = list.filter(w => (w.region ?? '') === dimFilter.region)
+    }
+    if (dimFilter.varietal) {
+      list = list.filter(w => (w.master_varietal ?? w.varietal ?? '') === dimFilter.varietal)
+    }
+    if (dimFilter.decade) {
+      list = list.filter(w => w.vintage && `${Math.floor(w.vintage / 10) * 10}s` === dimFilter.decade)
     }
 
     list.sort((a, b) => {
@@ -59,7 +120,7 @@ export default function WineInventory({ wines }: { wines: Wine[] }) {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 4 }}>Vinkjeller</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
@@ -70,6 +131,19 @@ export default function WineInventory({ wines }: { wines: Wine[] }) {
           <Upload size={15} /> Importer CSV
         </Link>
       </div>
+
+      {/* Active filter chip */}
+      {activeFilterLabel && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <span style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'sans-serif' }}>Filtrert:</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--accent)', color: '#0f0e0c', fontSize: 13, fontFamily: 'sans-serif', fontWeight: 600, padding: '4px 10px', borderRadius: 99 }}>
+            {activeFilterLabel}
+            <Link href="/" style={{ color: '#0f0e0c', display: 'flex', alignItems: 'center' }}>
+              <X size={12} />
+            </Link>
+          </span>
+        </div>
+      )}
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -111,13 +185,13 @@ export default function WineInventory({ wines }: { wines: Wine[] }) {
               <thead>
                 <tr>
                   <th>Vin</th>
-                  <th>Produsent</th>
+                  <th className="hide-mobile">Produsent</th>
                   <th>Åg</th>
-                  <th>Region</th>
-                  <th>Drue</th>
+                  <th className="hide-mobile">Region</th>
+                  <th className="hide-mobile">Drue</th>
                   <th style={{ textAlign: 'center' }}>Ant</th>
-                  <th style={{ textAlign: 'right' }}>Score</th>
-                  <th>Vindu</th>
+                  <th className="hide-mobile" style={{ textAlign: 'right' }}>Score</th>
+                  <th className="hide-mobile">Vindu</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -138,19 +212,19 @@ export default function WineInventory({ wines }: { wines: Wine[] }) {
                           )}
                         </Link>
                       </td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>{wine.producer ?? '—'}</td>
+                      <td className="hide-mobile" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{wine.producer ?? '—'}</td>
                       <td style={{ color: 'var(--text-muted)' }}>{wine.vintage ?? '—'}</td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>{wine.appellation ?? wine.region ?? '—'}</td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>{wine.master_varietal ?? wine.varietal ?? '—'}</td>
+                      <td className="hide-mobile" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{wine.appellation ?? wine.region ?? '—'}</td>
+                      <td className="hide-mobile" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{wine.master_varietal ?? wine.varietal ?? '—'}</td>
                       <td style={{ textAlign: 'center' }}>{wine.quantity}</td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td className="hide-mobile" style={{ textAlign: 'right' }}>
                         {score ? (
                           <span style={{ fontVariantNumeric: 'tabular-nums', color: score >= 92 ? 'var(--accent)' : 'var(--text)' }}>
                             {Math.round(score)}
                           </span>
                         ) : '—'}
                       </td>
-                      <td style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'sans-serif' }}>
+                      <td className="hide-mobile" style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'sans-serif' }}>
                         {wine.begin_consume && wine.end_consume
                           ? `${wine.begin_consume}–${wine.end_consume}`
                           : '—'}

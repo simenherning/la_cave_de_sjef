@@ -11,7 +11,7 @@ function Row({ label, value }: { label: string; value?: string | number | null }
   if (!value && value !== 0) return null
   return (
     <div style={{ display: 'flex', gap: 16, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-      <div style={{ width: 160, color: 'var(--text-muted)', fontSize: 13, fontFamily: 'sans-serif', flexShrink: 0 }}>{label}</div>
+      <div className="info-label" style={{ color: 'var(--text-muted)', fontSize: 13, fontFamily: 'sans-serif', flexShrink: 0 }}>{label}</div>
       <div style={{ fontSize: 14 }}>{value}</div>
     </div>
   )
@@ -71,7 +71,7 @@ export default function WineDetail({ wine, notes: initialNotes }: { wine: Wine; 
         <ArrowLeft size={14} /> Tilbake til kjelleren
       </Link>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24, alignItems: 'start' }}>
+      <div className="detail-grid">
         {/* Main info */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>

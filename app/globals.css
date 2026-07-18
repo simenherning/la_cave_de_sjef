@@ -17,11 +17,48 @@
 
 * { box-sizing: border-box; }
 
+html { -webkit-text-size-adjust: 100%; }
+
 body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Georgia', serif;
   min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.main-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+/* Nav ruller horisontalt på smale skjermer — uten synlig scrollbar */
+.nav-scroll { scrollbar-width: none; }
+.nav-scroll::-webkit-scrollbar { display: none; }
+
+/* Vindetalj: innhold + sidekolonne på desktop, stables på mobil */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 24px;
+  align-items: start;
+}
+.info-label { width: 160px; }
+@media (max-width: 900px) {
+  .detail-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .main-wrap { padding: 14px 12px calc(24px + env(safe-area-inset-bottom)); }
+  .hide-mobile { display: none !important; }
+  th { padding: 8px 6px; font-size: 10px; letter-spacing: 0.03em; }
+  td { padding: 8px 6px; font-size: 13px; }
+  /* Font under 16px i skjemafelt gir autozoom på iPhone — unngå det */
+  input, select, textarea { font-size: 16px; }
+  .btn { padding: 10px 14px; }
+  h1 { font-size: 22px; }
+  .info-label { width: 110px; }
 }
 
 .card {

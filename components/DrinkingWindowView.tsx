@@ -185,7 +185,7 @@ function ListView({ items }: { items: { wine: Wine; category: string }[] }) {
         <thead>
           <tr>
             <th>Vin</th>
-            <th>Produsent</th>
+            <th className="hide-mobile">Produsent</th>
             <th>Åg</th>
             <th>Drikkevindu</th>
             <th style={{ textAlign: 'center' }}>Ant</th>
@@ -203,7 +203,7 @@ function ListView({ items }: { items: { wine: Wine; category: string }[] }) {
                     <span style={{ fontSize: 13 }}>{wine.name}</span>
                   </Link>
                 </td>
-                <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>{wine.producer}</td>
+                <td className="hide-mobile" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{wine.producer}</td>
                 <td style={{ color: 'var(--text-muted)' }}>{wine.vintage ?? '—'}</td>
                 <td style={{ fontFamily: 'sans-serif', fontSize: 13, color: 'var(--text-muted)' }}>
                   {wine.begin_consume && wine.end_consume ? `${wine.begin_consume}–${wine.end_consume}` : '—'}
