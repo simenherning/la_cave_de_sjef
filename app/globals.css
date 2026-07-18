@@ -25,6 +25,15 @@ body {
   font-family: 'Georgia', serif;
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
+  /* Dobbelttrykk skal aldri zoome (raske trykk i skanneflyten) — panorering
+     og knip-zoom påvirkes ikke. Fjerner også 300 ms trykkforsinkelse. */
+  touch-action: manipulation;
+}
+
+/* Berøringsskjermer uansett orientering: 16px i skjemafelt hindrer at
+   iOS zoomer inn når feltet får fokus (f.eks. søket i skanneflyten). */
+@media (pointer: coarse) {
+  input, select, textarea { font-size: 16px; }
 }
 
 .main-wrap {
