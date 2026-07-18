@@ -9,7 +9,14 @@ export async function POST(req: NextRequest) {
     if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 })
 
     const buffer = await file.arrayBuffer()
-    const text = new TextDecoder('windows-1252').decode(buffer)
+    // CT-eksporter kommer i både UTF-8 og windows-1252: prøv streng UTF-8
+    // først, og fall tilbake til windows-1252 hvis dekodingen feiler.
+    let text: string
+    try {
+      text = new TextDecoder('utf-8', { fatal: true }).decode(buffer)
+    } catch {
+      text = new TextDecoder('windows-1252').decode(buffer)
+    }
     const wines = parseCSV(text)
     if (wines.length === 0) return NextResponse.json({ error: 'No wines parsed' }, { status: 400 })
 
