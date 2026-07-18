@@ -97,7 +97,9 @@ export default function TellingApp() {
     navigator.vibrate?.(60)
     const counted = w.countedQty + 1
     const label = [w.wine, w.vintage].filter(Boolean).join(' ')
-    if (counted > w.expectedQty && !w.notInCt) {
+    if (w.notInCt) {
+      showToast(`✓ ${label} — ${counted} talt (ikke i CT)`)
+    } else if (counted > w.expectedQty) {
       showToast(`⚠ ${label} — ${counted} av ${w.expectedQty} (overtall)`, 'warn')
     } else {
       showToast(`✓ ${label} — ${counted} av ${w.expectedQty}`)
@@ -116,9 +118,11 @@ export default function TellingApp() {
       }
     }
     const candidates = Array.from(keys)
+    const single = candidates.length === 1 ? wineByKey.get(candidates[0])! : null
     if (candidates.length === 0) {
       setSheet({ kind: 'search', ean })
-    } else if (candidates.length === 1 && remaining(wineByKey.get(candidates[0])!) > 0) {
+    } else if (single && (single.notInCt || remaining(single) > 0)) {
+      // Funne flasker (notInCt) har ingen forventet mengde — telles alltid rett opp.
       countWine(candidates[0], ean, 'auto')
     } else {
       // Flere kandidater, eller én kandidat som allerede er full (mulig overtall).
@@ -208,17 +212,23 @@ export default function TellingApp() {
     }
   }
 
-  function addUnknownWine(name: string, ean: string | null) {
-    if (!session || !name.trim()) return
+  // Flaske funnet i kjelleren som ikke finnes i CT: noteres i fritekst og
+  // telles som IKKE_I_CT. Listes på statussiden for manuell innlegging i CT.
+  function addFoundBottle(text: string, ean: string | null) {
+    if (!session || !text.trim()) return
     const key = `local-${Date.now()}`
+    const oneLine = text.trim().replace(/\s*\n\s*/g, ' / ')
     update(s => {
       s.wines.push({
-        key, iWine: '', vintage: '', wine: name.trim(), producer: '', size: '',
-        expectedQty: 0, countedQty: 1, knownEans: [], notInCt: true,
+        key, iWine: '', vintage: '', wine: oneLine, producer: '', size: '',
+        expectedQty: 0, countedQty: 1, knownEans: ean ? [ean] : [], notInCt: true,
       })
+      // Med EAN gjenkjennes samme flasketype resten av tellingen (teller opp
+      // samme notat), men lagres ikke i databasen — den mangler jo iWine.
+      if (ean) (s.eanMap[ean] ??= []).push(key)
       s.scans.push({ ts: new Date().toISOString(), ean, resolvedKey: key, method: ean ? 'manual' : 'noean' })
     })
-    showToast(`✓ ${name.trim()} — lagt til (ikke i CT)`)
+    showToast('✓ Notert — se «Funne flasker» under Status & eksport')
     setSheet(null)
   }
 
@@ -367,6 +377,23 @@ export default function TellingApp() {
             Eksporter EAN-koblinger (CSV)
           </button>
         </div>
+        {session.wines.some(w => w.notInCt) && (
+          <div className="card" style={{ padding: 16, marginBottom: 16, borderColor: 'var(--accent)' }}>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>📝 Funne flasker som ikke er i CT</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>
+              Disse må legges inn manuelt i CellarTracker. De er også med i resultat-CSV-en (status IKKE_I_CT).
+            </div>
+            {session.wines.filter(w => w.notInCt).map(w => (
+              <div key={w.key} style={{ padding: '10px 0', borderTop: '1px solid var(--border)', fontSize: 14 }}>
+                {w.wine}
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, fontFamily: 'sans-serif' }}>
+                  {w.countedQty} {w.countedQty === 1 ? 'flaske' : 'flasker'}
+                  {w.knownEans[0] ? ` · EAN ${w.knownEans[0]}` : ' · uten strekkode'}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="card" style={{ overflowX: 'auto' }}>
           <table>
             <thead>
@@ -447,7 +474,7 @@ export default function TellingApp() {
                     {[w.wine, w.vintage].filter(Boolean).join(' ')}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    {w.countedQty} av {w.expectedQty}{w.size ? ` · ${w.size}` : ''}
+                    {w.notInCt ? `${w.countedQty} talt · ikke i CT` : `${w.countedQty} av ${w.expectedQty}`}{w.size ? ` · ${w.size}` : ''}
                   </div>
                 </div>
                 <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => undoScan(index)}>
@@ -476,7 +503,7 @@ export default function TellingApp() {
             const w = wineByKey.get(key)
             if (!w) return null
             const rem = remaining(w)
-            const needsConfirm = rem <= 0
+            const needsConfirm = rem <= 0 && !w.notInCt
             const armed = confirmKey === key
             return (
               <button
@@ -496,6 +523,7 @@ export default function TellingApp() {
                   {w.size && `${w.size} · `}
                   {armed
                     ? 'Alle forventede er talt — trykk igjen for å bekrefte overtall'
+                    : w.notInCt ? `notert funnet flaske · ${w.countedQty} talt`
                     : needsConfirm ? `${w.countedQty} av ${w.expectedQty} talt (full!)` : `${rem} igjen`}
                 </div>
               </button>
@@ -517,7 +545,7 @@ export default function TellingApp() {
           confirmKey={confirmKey}
           onArm={setConfirmKey}
           onPick={(key) => countWine(key, sheet.ean, sheet.ean ? 'manual' : 'noean')}
-          onAddUnknown={(name) => addUnknownWine(name, sheet.ean)}
+          onAddUnknown={(text) => addFoundBottle(text, sheet.ean)}
           onClose={() => { setSheet(null); setConfirmKey(null) }}
         />
       )}
@@ -557,7 +585,8 @@ function SearchSheet({ wines, ean, confirmKey, onArm, onPick, onAddUnknown, onCl
   onClose: () => void
 }) {
   const [query, setQuery] = useState('')
-  const [unknownMode, setUnknownMode] = useState(false)
+  const [noteMode, setNoteMode] = useState(false)
+  const [noteText, setNoteText] = useState('')
 
   const results = useMemo(() => {
     // Aksent-ufølsomt søk: «petrus» skal treffe «Pétrus», «Metras» → «Métras».
@@ -631,15 +660,35 @@ function SearchSheet({ wines, ean, confirmKey, onArm, onPick, onAddUnknown, onCl
         <div style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: 14 }}>Ingen treff.</div>
       )}
       <div style={{ padding: '12px 16px' }}>
-        {unknownMode ? (
-          <form onSubmit={e => { e.preventDefault(); onAddUnknown(query) }} style={{ display: 'flex', gap: 8 }}>
-            <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={!query.trim()}>
-              Legg til «{query.trim() || '…'}» som ukjent vin
+        {noteMode ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              Beskriv flasken kjapt — produsent, vin, årgang, det du ser på etiketten.
+              Notatet dukker opp under «Status & eksport» så du kan legge den inn i CT etterpå.
+            </div>
+            <textarea
+              autoFocus
+              rows={3}
+              placeholder="F.eks. Ganevat Cuvée de l'Enfant Terrible 2019, magnum …"
+              value={noteText}
+              onChange={e => setNoteText(e.target.value)}
+            />
+            <button
+              className="btn btn-primary"
+              style={{ justifyContent: 'center' }}
+              disabled={!noteText.trim()}
+              onClick={() => onAddUnknown(noteText)}
+            >
+              Lagre notat og tell flasken
             </button>
-          </form>
+          </div>
         ) : (
-          <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setUnknownMode(true)}>
-            Vinen finnes ikke i CT — legg til ukjent vin
+          <button
+            className="btn btn-ghost"
+            style={{ width: '100%', justifyContent: 'center' }}
+            onClick={() => { setNoteText(query); setNoteMode(true) }}
+          >
+            📝 Finnes ikke i CT — noter funnet flaske
           </button>
         )}
       </div>
