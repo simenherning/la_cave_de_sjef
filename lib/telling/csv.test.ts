@@ -131,6 +131,24 @@ test('mapDbWines: wines-tabellen mappes til tellingens datamodell', async () => 
   assert.deepEqual(rows[2].knownEans, []) // ugyldig UPC-verdi filtreres
 })
 
+test('mergeLearnedEans: lærte koblinger flettes inn på (iWine, størrelse)', async () => {
+  const { mapDbWines, mergeLearnedEans } = await import('./inventory.ts')
+  const rows = mapDbWines([
+    { id: 1, iwine_id: '111', vintage: 2017, name: 'Vin A', producer: 'P', size: '750ml', quantity: 3, upc: '7070292956388' },
+    { id: 2, iwine_id: '111', vintage: 2017, name: 'Vin A', producer: 'P', size: '1.5L', quantity: 1, upc: null },
+    { id: 3, iwine_id: '222', vintage: 2018, name: 'Vin B', producer: 'P', size: '750ml', quantity: 2, upc: null },
+  ])
+  mergeLearnedEans(rows, [
+    { ean: '7031234567890', iwine_id: '111', size: '1.5L' },   // treffer kun magnum
+    { ean: '7039999999999', iwine_id: '222', size: '' },       // tom size → alle størrelser
+    { ean: '7070292956388', iwine_id: '111', size: '750ml' },  // duplikat av CT-UPC → ikke dobbelt
+    { ean: 'ugyldig', iwine_id: '222', size: '750ml' },        // ugyldig EAN ignoreres
+  ])
+  assert.deepEqual(rows[0].knownEans, ['7070292956388'])
+  assert.deepEqual(rows[1].knownEans, ['7031234567890'])
+  assert.deepEqual(rows[2].knownEans, ['7039999999999'])
+})
+
 function makeSession(wines: WineRow[], eanMap: Session['eanMap'] = {}): Session {
   return { startedAt: '2026-01-01T18:00:00Z', inventoryFileName: 'test.csv', wines, eanMap, scans: [] }
 }

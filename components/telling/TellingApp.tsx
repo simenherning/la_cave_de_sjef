@@ -4,7 +4,7 @@ import Scanner from './Scanner'
 import {
   buildEanMap, buildEanMapCsv, buildResultCsv, eanLookupKeys, parseEanMapFile, parseInventory,
 } from '@/lib/telling/csv'
-import { fetchInventory } from '@/lib/telling/inventory'
+import { fetchInventory, fetchLearnedEans, mergeLearnedEans, saveLearnedEan } from '@/lib/telling/inventory'
 import { clearSession, loadSession, saveSession } from '@/lib/telling/storage'
 import type { ScanMethod, Session, WineRow } from '@/lib/telling/types'
 import { wineStatus, type WineStatus } from '@/lib/telling/types'
@@ -85,12 +85,16 @@ export default function TellingApp() {
   const countWine = useCallback((key: string, ean: string | null, method: ScanMethod) => {
     const w = wineByKey.get(key)
     if (!w) return
+    const isNewMapping = !!ean && !session?.eanMap[ean]?.includes(key)
     update(s => {
       const wine = s.wines.find(x => x.key === key)!
       wine.countedQty++
       if (ean && !s.eanMap[ean]?.includes(key)) (s.eanMap[ean] ??= []).push(key)
       s.scans.push({ ts: new Date().toISOString(), ean, resolvedKey: key, method })
     })
+    // Nylært kobling lagres også i databasen, så neste års telling (og andre
+    // enheter) gjenkjenner EAN-en uten koblingsfil. Best effort — se saveLearnedEan.
+    if (isNewMapping && ean) saveLearnedEan(ean, w)
     navigator.vibrate?.(60)
     const counted = w.countedQty + 1
     const label = [w.wine, w.vintage].filter(Boolean).join(' ')
@@ -101,7 +105,7 @@ export default function TellingApp() {
     }
     setSheet(null)
     setConfirmKey(null)
-  }, [update, wineByKey, showToast])
+  }, [update, wineByKey, showToast, session?.eanMap])
 
   // Skanneløkke (PRD §5): auto → valgark → søk, avhengig av kandidater.
   const handleEan = useCallback((ean: string) => {
@@ -191,6 +195,7 @@ export default function TellingApp() {
       if (wines.length === 0) {
         throw new Error('Fant ingen viner med antall > 0 i databasen. Importer kjelleren på /import først.')
       }
+      mergeLearnedEans(wines, await fetchLearnedEans())
       const s: Session = {
         startedAt: new Date().toISOString(),
         inventoryFileName: 'kjellerdatabasen',
@@ -362,7 +367,8 @@ export default function TellingApp() {
             <div className="card" style={{ padding: 16, marginBottom: 16 }}>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>2. Valgfritt: last inn fjorårets EAN-koblinger</div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>
-                Filen «ean-koblinger-…csv» fra forrige telling. Gjør at tidligere identifiserte viner gjenkjennes automatisk.
+                Vanligvis unødvendig — koblinger appen lærer lagres automatisk i databasen.
+              Bruk denne bare som backup, f.eks. hvis en telling ble gjort uten nett.
               </div>
               <input
                 type="file"
