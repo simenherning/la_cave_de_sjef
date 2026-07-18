@@ -69,7 +69,9 @@ export function parseCSVRow(headers: string[], values: string[]): Partial<Wine> 
 }
 
 export function parseCSV(csvText: string): Partial<Wine>[] {
-  const lines = csvText.split('\n').filter(l => l.trim())
+  // CRLF-normalisering: uten denne beholder siste kolonne per linje '"\r',
+  // så f.eks. headeren "UPC" blir 'UPC"' og aldri matcher.
+  const lines = csvText.replace(/\r\n?/g, '\n').split('\n').filter(l => l.trim())
   if (lines.length < 2) return []
 
   // Parse header line
