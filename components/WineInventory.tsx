@@ -113,7 +113,8 @@ export default function WineInventory({
   }, [wines, search, colorFilter, sortBy])
 
   const totalBottles = wines.filter(w => w.quantity > 0).reduce((s, w) => s + w.quantity, 0)
-  const totalValue = wines.filter(w => w.quantity > 0).reduce((s, w) => s + (w.estimated_value ?? 0), 0)
+  // estimated_value er per flaske (CTs Value/Valuation-kolonner) — gang med antall.
+  const totalValue = wines.filter(w => w.quantity > 0).reduce((s, w) => s + (w.estimated_value ?? 0) * w.quantity, 0)
 
   const fmt = (n: number) => new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 0 }).format(n)
 

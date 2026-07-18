@@ -120,7 +120,7 @@ export default function WineDetail({ wine, notes: initialNotes }: { wine: Wine; 
             <Row label="Størrelse" value={wine.size} />
             <Row label="Antall flasker" value={wine.quantity} />
             <Row label="Innkjøpspris" value={wine.purchase_price ? `NOK ${wine.purchase_price.toFixed(0)}` : null} />
-            <Row label="Estimert verdi" value={wine.estimated_value ? `NOK ${wine.estimated_value.toFixed(0)}` : null} />
+            <Row label="Estimert verdi/fl." value={wine.estimated_value ? `NOK ${wine.estimated_value.toFixed(0)}` : null} />
           </div>
 
           {/* Personal notes */}
