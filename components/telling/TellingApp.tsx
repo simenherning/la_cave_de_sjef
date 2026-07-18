@@ -576,9 +576,18 @@ function SearchSheet({ wines, ean, confirmKey, onArm, onPick, onAddUnknown, onCl
       .slice(0, 50)
   }, [wines, query])
 
+  // Fullskjerm i stedet for bunn-ark: iOS-tastaturet dyttet bunn-arket ut av
+  // syne når søkefeltet fikk fokus. Med feltet forankret ØVERST er felt og
+  // forslag alltid synlige over tastaturet — ingen scrolling nødvendig.
   return (
-    <BottomSheet title={ean ? `Ukjent EAN ${ean} — hvilken vin?` : 'Flaske uten strekkode'} onClose={onClose}>
-      <div style={{ padding: '12px 16px' }}>
+    <div className="full-sheet">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <div style={{ fontWeight: 600, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {ean ? `Ukjent EAN ${ean} — hvilken vin?` : 'Flaske uten strekkode'}
+        </div>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 26, cursor: 'pointer', lineHeight: 1, padding: '0 0 0 12px' }}>×</button>
+      </div>
+      <div style={{ padding: '10px 16px', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
         <input
           autoFocus
           placeholder="Søk på produsent eller vinnavn …"
@@ -591,6 +600,7 @@ function SearchSheet({ wines, ean, confirmKey, onArm, onPick, onAddUnknown, onCl
           </div>
         )}
       </div>
+      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
       {results.map(w => {
         const rem = remaining(w)
         const needsConfirm = rem <= 0
@@ -633,6 +643,7 @@ function SearchSheet({ wines, ean, confirmKey, onArm, onPick, onAddUnknown, onCl
           </button>
         )}
       </div>
-    </BottomSheet>
+      </div>
+    </div>
   )
 }
