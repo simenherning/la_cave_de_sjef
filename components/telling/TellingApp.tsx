@@ -4,6 +4,7 @@ import Scanner from './Scanner'
 import {
   buildEanMapCsv, buildResultCsv, eanLookupKeys, parseEanMapFile, parseInventory,
 } from '@/lib/telling/csv'
+import { fetchInventory } from '@/lib/telling/inventory'
 import { clearSession, loadSession, saveSession } from '@/lib/telling/storage'
 import type { ScanMethod, Session, WineRow } from '@/lib/telling/types'
 import { wineStatus, type WineStatus } from '@/lib/telling/types'
@@ -52,6 +53,7 @@ export default function TellingApp() {
   const [importError, setImportError] = useState<string | null>(null)
   const [importWarnings, setImportWarnings] = useState<string[]>([])
   const [eanFileMsg, setEanFileMsg] = useState<string | null>(null)
+  const [dbLoading, setDbLoading] = useState(false)
 
   useEffect(() => {
     setStored(loadSession())
@@ -179,6 +181,31 @@ export default function TellingApp() {
     }
   }
 
+  async function handleFetchFromDb() {
+    setImportError(null)
+    setImportWarnings([])
+    setEanFileMsg(null)
+    setDbLoading(true)
+    try {
+      const wines = await fetchInventory()
+      if (wines.length === 0) {
+        throw new Error('Fant ingen viner med antall > 0 i databasen. Importer kjelleren på /import først.')
+      }
+      const s: Session = {
+        startedAt: new Date().toISOString(),
+        inventoryFileName: 'kjellerdatabasen',
+        wines, eanMap: {}, scans: [],
+      }
+      saveSession(s)
+      setSession(s)
+      setStored(null)
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : 'Ukjent feil ved henting fra databasen.')
+    } finally {
+      setDbLoading(false)
+    }
+  }
+
   async function handleEanMapFile(file: File) {
     if (!session) return
     try {
@@ -280,10 +307,23 @@ export default function TellingApp() {
 
         {(!stored || showImport || session) && (
           <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>1. Last inn CellarTracker-eksport (CSV)</div>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>1. Hent inventaret</div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>
-              CellarTracker: My Cellar → Export → CSV. Ta med <b>iWine</b>-kolonnen hvis du kan
-              (gir enklest avstemming etterpå), men appen fungerer også uten.
+              Enklest: hent kjelleren rett fra databasen — CSV-en du importerer på{' '}
+              <b>/import</b> (f.eks. på Mac-en) er da automatisk tilgjengelig her.
+            </div>
+            <button
+              className="btn btn-primary"
+              style={{ width: '100%', justifyContent: 'center', marginBottom: 14 }}
+              disabled={dbLoading}
+              onClick={handleFetchFromDb}
+            >
+              {dbLoading ? 'Henter …' : 'Hent fra kjellerdatabasen'}
+            </button>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>
+              … eller last inn en CellarTracker-eksport (CSV) direkte: My Cellar → Export → CSV.
+              Ta med <b>iWine</b>-kolonnen hvis du kan (gir enklest avstemming etterpå),
+              men appen fungerer også uten.
             </div>
             <input
               type="file"

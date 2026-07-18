@@ -95,6 +95,22 @@ test('normalizeEan og eanLookupKeys: EAN-8/UPC-A/EAN-13, UPC↔EAN-varianter', (
   assert.deepEqual(eanLookupKeys('0123456789012'), ['0123456789012', '123456789012'])
 })
 
+test('mapDbWines: wines-tabellen mappes til tellingens datamodell', async () => {
+  const { mapDbWines } = await import('./inventory.ts')
+  const rows = mapDbWines([
+    { id: 1, iwine_id: '3051601', vintage: 2017, name: 'Clos des Ducs', producer: 'Angerville', size: '750ml', quantity: 3 },
+    { id: 2, iwine_id: null, vintage: null, name: 'Massandra', producer: null, size: null, quantity: 1 },
+    { id: 3, iwine_id: '999', vintage: 2020, name: 'Tom', producer: null, size: '750ml', quantity: 0 },
+  ])
+  assert.equal(rows.length, 2) // quantity 0 filtreres bort
+  assert.deepEqual(rows[0], {
+    key: '3051601', iWine: '3051601', vintage: '2017', wine: 'Clos des Ducs',
+    producer: 'Angerville', size: '750ml', expectedQty: 3, countedQty: 0, knownEans: [],
+  })
+  assert.equal(rows[1].key, 'db-2')
+  assert.equal(rows[1].iWine, '')
+})
+
 function makeSession(wines: WineRow[], eanMap: Session['eanMap'] = {}): Session {
   return { startedAt: '2026-01-01T18:00:00Z', inventoryFileName: 'test.csv', wines, eanMap, scans: [] }
 }
