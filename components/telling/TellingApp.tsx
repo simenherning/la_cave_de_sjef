@@ -282,7 +282,8 @@ export default function TellingApp() {
           <div className="card" style={{ padding: 16, marginBottom: 16 }}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>1. Last inn CellarTracker-eksport (CSV)</div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10 }}>
-              CellarTracker: My Cellar → Export → CSV. Husk å inkludere kolonnen <b>iWine</b>.
+              CellarTracker: My Cellar → Export → CSV. Ta med <b>iWine</b>-kolonnen hvis du kan
+              (gir enklest avstemming etterpå), men appen fungerer også uten.
             </div>
             <input
               type="file"

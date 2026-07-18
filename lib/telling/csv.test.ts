@@ -59,8 +59,25 @@ test('parseInventory: per-vin-eksport med Quantity brukes direkte', () => {
 })
 
 test('parseInventory: manglende påkrevd kolonne gir forklarende feil', () => {
-  const text = 'Vintage,Wine,Size\n2017,"Vin A",750ml\n'
-  assert.throws(() => parseInventory(text), /iWine/)
+  const text = 'iWine,Vintage,Wine\n111,2017,"Vin A"\n'
+  assert.throws(() => parseInventory(text), /Size/)
+})
+
+test('parseInventory: uten iWine-kolonne brukes vintage|wine|size som nøkkel', () => {
+  const text = [
+    'Vintage,Wine,Size,Quantity',
+    '2017,"Vin A",750ml,1',
+    '2017,"Vin A",750ml,2',
+    '2018,"Vin A",750ml,1',
+    '2017,"Vin A",1.5L,1',
+  ].join('\n')
+  const { wines, warnings } = parseInventory(text)
+  assert.ok(warnings.some(w => w.includes('iWine-kolonnen mangler')))
+  assert.equal(wines.length, 3) // 2017/750ml, 2018/750ml, 2017/1.5L
+  const w2017 = wines.find(w => w.vintage === '2017' && w.size === '750ml')!
+  assert.equal(w2017.expectedQty, 3)
+  assert.equal(w2017.iWine, '')
+  assert.equal(w2017.key, '2017|vin a|750ml')
 })
 
 test('parseInventory: kolonnenavn matches case-insensitivt', () => {

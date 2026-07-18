@@ -49,8 +49,9 @@ const COLUMN_SYNONYMS: Record<string, string[]> = {
   ean: ['winebarcode', 'upc', 'wineupc'],
 }
 
+// iWine er sterkt ønsket (gjør resultatet joinbart mot CT), men ikke alle
+// CT-eksporter har den med — da faller vi tilbake på Vintage|Wine|Size som nøkkel.
 const REQUIRED_COLUMNS: Array<{ field: string; label: string }> = [
-  { field: 'iWine', label: 'iWine (huk av for den i CT-eksporten)' },
   { field: 'vintage', label: 'Vintage' },
   { field: 'wine', label: 'Wine' },
   { field: 'size', label: 'Size' },
@@ -97,13 +98,22 @@ export function parseInventory(text: string): ImportResult {
   }
 
   const warnings: string[] = []
-  const byIWine = new Map<string, WineRow>()
+  if (col.iWine === -1) {
+    warnings.push(
+      'iWine-kolonnen mangler i eksporten. Tellingen fungerer, men resultatet kan ikke ' +
+      'joines direkte mot CT på iWine — avstemmingen må gjøres på vin + årgang + størrelse.'
+    )
+  }
+  const byKey = new Map<string, WineRow>()
 
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r]
     const get = (field: string) => (col[field] >= 0 ? (row[col[field]] ?? '').trim() : '')
     const iWine = get('iWine')
-    if (!iWine) { warnings.push(`Rad ${r + 1} mangler iWine og ble hoppet over.`); continue }
+    // Uten iWine: syntetisk nøkkel per (årgang, vin, størrelse) — CT skiller
+    // uansett årgang/størrelse som egne viner, så dette gir samme granularitet.
+    const key = iWine || `${get('vintage')}|${get('wine')}|${get('size')}`.toLowerCase()
+    if (key === '||') { warnings.push(`Rad ${r + 1} mangler både iWine og vinnavn og ble hoppet over.`); continue }
 
     let qty = 1
     if (col.quantity >= 0) {
@@ -112,13 +122,13 @@ export function parseInventory(text: string): ImportResult {
     }
     const ean = normalizeEan(get('ean'))
 
-    const existing = byIWine.get(iWine)
+    const existing = byKey.get(key)
     if (existing) {
       existing.expectedQty += qty
       if (ean && !existing.knownEans.includes(ean)) existing.knownEans.push(ean)
     } else {
-      byIWine.set(iWine, {
-        key: iWine,
+      byKey.set(key, {
+        key,
         iWine,
         vintage: get('vintage'),
         wine: get('wine'),
@@ -131,7 +141,7 @@ export function parseInventory(text: string): ImportResult {
     }
   }
 
-  const wines = Array.from(byIWine.values())
+  const wines = Array.from(byKey.values())
   const eanMap: Record<string, string[]> = {}
   for (const w of wines) {
     for (const ean of w.knownEans) {
