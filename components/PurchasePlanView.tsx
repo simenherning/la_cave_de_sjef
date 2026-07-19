@@ -68,7 +68,7 @@ export default function PurchasePlanView({ wines, targets: initialTargets }: Pro
   return (
     <div>
       <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 8 }}>Innkjøpsplan</h1>
-      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 28, fontFamily: 'sans-serif' }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 28 }}>
         Sett målprofil for kjelleren og se hva du bør kjøpe
       </p>
 
@@ -80,12 +80,12 @@ export default function PurchasePlanView({ wines, targets: initialTargets }: Pro
             <div key={color} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <WineColorDot color={color} />
               <span style={{ fontSize: 14 }}>{color === 'Red' ? 'Rød' : color === 'White' ? 'Hvit' : 'Rosé'}</span>
-              <span style={{ fontFamily: 'sans-serif', fontSize: 13 }}>{count} fl.</span>
-              <span style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'sans-serif' }}>({pct}%)</span>
+              <span style={{ fontSize: 13 }}>{count} fl.</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>({pct}%)</span>
             </div>
           ))}
         </div>
-        <div style={{ color: 'var(--text-muted)', fontSize: 13, fontFamily: 'sans-serif' }}>
+        <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
           Totalt {totalBottles} flasker
         </div>
       </div>
@@ -101,11 +101,11 @@ export default function PurchasePlanView({ wines, targets: initialTargets }: Pro
       {showAdd && (
         <div className="card" style={{ padding: 20, marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div style={{ flex: '1 1 140px' }}>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4, fontFamily: 'sans-serif' }}>Navn</label>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Navn</label>
             <input placeholder="f.eks. Burgund" value={newLabel} onChange={e => setNewLabel(e.target.value)} />
           </div>
           <div style={{ flex: '0 0 130px' }}>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4, fontFamily: 'sans-serif' }}>Filter</label>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Filter</label>
             <select value={newKey} onChange={e => setNewKey(e.target.value)}>
               <option value="color">Farge</option>
               <option value="country">Land</option>
@@ -115,11 +115,11 @@ export default function PurchasePlanView({ wines, targets: initialTargets }: Pro
             </select>
           </div>
           <div style={{ flex: '1 1 140px' }}>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4, fontFamily: 'sans-serif' }}>Verdi</label>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Verdi</label>
             <input placeholder="f.eks. Burgundy / Red" value={newValue} onChange={e => setNewValue(e.target.value)} />
           </div>
           <div style={{ flex: '0 0 100px' }}>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4, fontFamily: 'sans-serif' }}>Mål (fl.)</label>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Mål (fl.)</label>
             <input type="number" placeholder="20" value={newTarget} onChange={e => setNewTarget(e.target.value)} />
           </div>
           <button className="btn btn-primary" onClick={addTarget} disabled={saving}>
@@ -154,12 +154,12 @@ export default function PurchasePlanView({ wines, targets: initialTargets }: Pro
                   return (
                     <tr key={t.id}>
                       <td style={{ fontWeight: 500 }}>{t.label}</td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: 13, fontFamily: 'sans-serif' }}>
+                      <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                         {t.filter_key}: {t.filter_value}
                       </td>
-                      <td style={{ textAlign: 'right', fontFamily: 'sans-serif' }}>{current}</td>
-                      <td style={{ textAlign: 'right', fontFamily: 'sans-serif' }}>{t.target_quantity}</td>
-                      <td style={{ textAlign: 'right', fontFamily: 'sans-serif', fontWeight: 600, color: gap > 0 ? '#c4803a' : gap < 0 ? '#9b3a3a' : '#5a9b5a' }}>
+                      <td style={{ textAlign: 'right' }}>{current}</td>
+                      <td style={{ textAlign: 'right' }}>{t.target_quantity}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, color: gap > 0 ? 'var(--status-soon)' : gap < 0 ? 'var(--status-past)' : 'var(--status-now)' }}>
                         {gap > 0 ? `+${gap}` : gap < 0 ? gap : '✓'}
                       </td>
                       <td>
@@ -175,12 +175,12 @@ export default function PurchasePlanView({ wines, targets: initialTargets }: Pro
           </div>
 
           {needsToBuy.length > 0 && (
-            <div className="card" style={{ padding: 20, marginBottom: 20, borderColor: '#c4803a44' }}>
-              <h3 style={{ fontSize: 14, color: '#c4803a', marginBottom: 12, fontFamily: 'sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Kjøp</h3>
+            <div className="card" style={{ padding: 20, marginBottom: 20, borderColor: 'var(--status-soon)' }}>
+              <h3 style={{ fontSize: 14, color: 'var(--status-soon)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Kjøp</h3>
               {needsToBuy.map(t => (
                 <div key={t.id} style={{ marginBottom: 8, fontSize: 14 }}>
                   <span style={{ fontWeight: 500 }}>{t.label}</span>
-                  <span style={{ color: 'var(--text-muted)', marginLeft: 8, fontFamily: 'sans-serif' }}>
+                  <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>
                     — kjøp {t.gap} flasker ({t.current}/{t.target_quantity})
                   </span>
                 </div>
@@ -189,12 +189,12 @@ export default function PurchasePlanView({ wines, targets: initialTargets }: Pro
           )}
 
           {overTarget.length > 0 && (
-            <div className="card" style={{ padding: 20, borderColor: '#9b3a3a44' }}>
-              <h3 style={{ fontSize: 14, color: '#9b6b3a', marginBottom: 12, fontFamily: 'sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Over mål</h3>
+            <div className="card" style={{ padding: 20, borderColor: 'var(--status-past-bg)' }}>
+              <h3 style={{ fontSize: 14, color: 'var(--status-past)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Over mål</h3>
               {overTarget.map(t => (
                 <div key={t.id} style={{ marginBottom: 8, fontSize: 14 }}>
                   <span style={{ fontWeight: 500 }}>{t.label}</span>
-                  <span style={{ color: 'var(--text-muted)', marginLeft: 8, fontFamily: 'sans-serif' }}>
+                  <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>
                     — {t.surplus} over mål ({t.current}/{t.target_quantity})
                   </span>
                 </div>

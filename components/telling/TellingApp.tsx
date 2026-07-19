@@ -15,11 +15,11 @@ type Sheet =
   | { kind: 'search'; ean: string | null }
 
 const STATUS_COLORS: Record<WineStatus, string> = {
-  OK: '#5a9b5a',
-  MANGLER: '#c4a35a',
-  IKKE_SKANNET: '#c4a35a',
-  OVERTALL: '#9b3a3a',
-  IKKE_I_CT: '#9b3a3a',
+  OK: 'var(--status-now)',
+  MANGLER: 'var(--status-soon)',
+  IKKE_SKANNET: 'var(--status-soon)',
+  OVERTALL: 'var(--status-past)',
+  IKKE_I_CT: 'var(--status-past)',
 }
 
 function remaining(w: WineRow): number {
@@ -321,7 +321,7 @@ export default function TellingApp() {
               onChange={e => { const f = e.target.files?.[0]; if (f) handleInventoryFile(f) }}
             />
             {importError && (
-              <div style={{ marginTop: 10, color: '#d47a7a', fontSize: 13 }}>{importError}</div>
+              <div style={{ marginTop: 10, color: 'var(--status-past)', fontSize: 13 }}>{importError}</div>
             )}
             {importWarnings.length > 0 && (
               <div style={{ marginTop: 10, color: 'var(--accent)', fontSize: 12 }}>
@@ -386,7 +386,7 @@ export default function TellingApp() {
             {session.wines.filter(w => w.notInCt).map(w => (
               <div key={w.key} style={{ padding: '10px 0', borderTop: '1px solid var(--border)', fontSize: 14 }}>
                 {w.wine}
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, fontFamily: 'sans-serif' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
                   {w.countedQty} {w.countedQty === 1 ? 'flaske' : 'flasker'}
                   {w.knownEans[0] ? ` · EAN ${w.knownEans[0]}` : ' · uten strekkode'}
                 </div>
@@ -422,7 +422,7 @@ export default function TellingApp() {
                     <td className="hide-mobile" style={{ whiteSpace: 'nowrap' }}>{w.size}</td>
                     <td style={{ textAlign: 'right' }}>{w.expectedQty}</td>
                     <td style={{ textAlign: 'right' }}>{w.countedQty}</td>
-                    <td style={{ color: STATUS_COLORS[st], whiteSpace: 'nowrap', fontFamily: 'sans-serif', fontSize: 12 }}>
+                    <td style={{ color: STATUS_COLORS[st], whiteSpace: 'nowrap', fontSize: 12 }}>
                       {st}{st !== 'OK' && st !== 'IKKE_I_CT' ? ` (${w.countedQty - w.expectedQty > 0 ? '+' : ''}${w.countedQty - w.expectedQty})` : ''}
                     </td>
                   </tr>
@@ -495,7 +495,7 @@ export default function TellingApp() {
         <div style={{
           position: 'fixed', top: 14, left: '50%', transform: 'translateX(-50%)',
           maxWidth: 'calc(100vw - 32px)', zIndex: 100, padding: '10px 18px', borderRadius: 8,
-          background: toast.kind === 'ok' ? '#2e4a2e' : '#5a4420', color: 'var(--text)',
+          background: toast.kind === 'ok' ? 'var(--status-now-bg)' : 'var(--status-soon-bg)', color: toast.kind === 'ok' ? 'var(--status-now)' : 'var(--status-soon)', border: '1px solid var(--border)',
           fontSize: 14, boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
         }}>
           {toast.msg}
@@ -519,12 +519,12 @@ export default function TellingApp() {
                 }}
                 style={{
                   display: 'block', width: '100%', textAlign: 'left', padding: '14px 16px',
-                  background: armed ? '#4a3520' : 'transparent', border: 'none',
+                  background: armed ? 'var(--status-soon-bg)' : 'transparent', border: 'none',
                   borderBottom: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit',
                 }}
               >
                 <div style={{ fontSize: 15 }}>{[w.wine, w.vintage].filter(Boolean).join(' ')}</div>
-                <div style={{ fontSize: 13, color: needsConfirm ? '#d47a7a' : 'var(--text-muted)', marginTop: 2 }}>
+                <div style={{ fontSize: 13, color: needsConfirm ? 'var(--status-past)' : 'var(--text-muted)', marginTop: 2 }}>
                   {w.size && `${w.size} · `}
                   {armed
                     ? 'Alle forventede er talt — trykk igjen for å bekrefte overtall'
@@ -648,12 +648,12 @@ function SearchSheet({ wines, ean, confirmKey, onArm, onPick, onAddUnknown, onCl
             }}
             style={{
               display: 'block', width: '100%', textAlign: 'left', padding: '12px 16px',
-              background: armed ? '#4a3520' : 'transparent', border: 'none',
+              background: armed ? 'var(--status-soon-bg)' : 'transparent', border: 'none',
               borderBottom: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
             <div style={{ fontSize: 14 }}>{[w.wine, w.vintage].filter(Boolean).join(' ')}</div>
-            <div style={{ fontSize: 12, color: needsConfirm ? '#d47a7a' : 'var(--text-muted)', marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: needsConfirm ? 'var(--status-past)' : 'var(--text-muted)', marginTop: 2 }}>
               {[w.producer, w.size].filter(Boolean).join(' · ')}
               {' · '}
               {armed ? 'Trykk igjen for å bekrefte overtall' : needsConfirm ? 'full!' : `${rem} igjen`}

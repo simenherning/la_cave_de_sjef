@@ -27,12 +27,12 @@ export default function ImportPage() {
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
-      <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14, marginBottom: 24, fontFamily: 'sans-serif' }}>
+      <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14, marginBottom: 24 }}>
         <ArrowLeft size={14} /> Tilbake
       </Link>
 
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Importer CSV</h1>
-      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 32, fontFamily: 'sans-serif' }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 32 }}>
         Last opp en CellarTracker-eksport (.csv). Viner med samme iWine-ID oppdateres, nye legges til.
       </p>
 
@@ -55,7 +55,7 @@ export default function ImportPage() {
           <p style={{ color: 'var(--text)', marginBottom: 4 }}>
             {file ? file.name : 'Klikk for å velge CSV-fil'}
           </p>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13, fontFamily: 'sans-serif' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
             CellarTracker-eksport format
           </p>
           <input
@@ -81,11 +81,11 @@ export default function ImportPage() {
         </button>
 
         {status === 'success' && result && (
-          <div style={{ marginTop: 16, padding: 16, background: '#5a9b5a22', borderRadius: 8, border: '1px solid #5a9b5a44', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <CheckCircle size={18} style={{ color: '#5a9b5a', flexShrink: 0, marginTop: 1 }} />
+          <div style={{ marginTop: 16, padding: 16, background: 'var(--status-now-bg)', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <CheckCircle size={18} style={{ color: 'var(--status-now)', flexShrink: 0, marginTop: 1 }} />
             <div>
               <p style={{ fontWeight: 600, marginBottom: 4 }}>Import vellykket!</p>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'sans-serif' }}>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                 {result.parsed as number} viner behandlet · {result.upserted as number} oppdatert · {result.inserted as number} lagt til
               </p>
               <Link href="/" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', display: 'inline-block', marginTop: 8 }}>
@@ -96,11 +96,11 @@ export default function ImportPage() {
         )}
 
         {status === 'error' && result && (
-          <div style={{ marginTop: 16, padding: 16, background: '#9b3a3a22', borderRadius: 8, border: '1px solid #9b3a3a44', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <AlertCircle size={18} style={{ color: '#9b3a3a', flexShrink: 0, marginTop: 1 }} />
+          <div style={{ marginTop: 16, padding: 16, background: 'var(--status-past-bg)', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <AlertCircle size={18} style={{ color: 'var(--status-past)', flexShrink: 0, marginTop: 1 }} />
             <div>
               <p style={{ fontWeight: 600, marginBottom: 4 }}>Import feilet</p>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'sans-serif' }}>{result.error as string}</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{result.error as string}</p>
             </div>
           </div>
         )}

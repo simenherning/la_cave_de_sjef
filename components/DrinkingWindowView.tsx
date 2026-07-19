@@ -14,10 +14,11 @@ function windowStatus(wine: Wine, year: number): 'before' | 'peak' | 'after' | '
   return 'peak'
 }
 
+// Varme rivieratoner: før-vindu = sand, i vindu = terrakotta, etter = falmet rosa
 const statusColors: Record<string, string> = {
-  before: '#2a3a4a',
+  before: '#cdbfa4',
   peak: 'var(--accent)',
-  after: '#3a2a2a',
+  after: '#d8bfae',
   none: 'transparent',
 }
 
@@ -50,19 +51,19 @@ export default function DrinkingWindowView({ wines }: { wines: Wine[] }) {
   return (
     <div>
       <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 8 }}>Drikkevindu</h1>
-      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, fontFamily: 'sans-serif' }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
         Planlegg når du skal drikke hva
       </p>
 
       {/* Summary pills */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
         {[
-          { key: 'alle', label: 'Alle', color: 'var(--text-muted)' },
-          { key: 'nå', label: `Drikk nå (${counts.nå} fl.)`, color: '#5a9b5a' },
-          { key: 'snart', label: `Snart (${counts.snart} fl.)`, color: '#c4803a' },
-          { key: 'vent', label: `Vent (${counts.vent} fl.)`, color: '#6b9eb5' },
-          { key: 'passert', label: `Passert (${counts.passert} fl.)`, color: '#9b3a3a' },
-        ].map(({ key, label, color }) => (
+          { key: 'alle', label: 'Alle', color: 'var(--text)', bg: 'var(--bg-hover)' },
+          { key: 'nå', label: `Drikk nå (${counts.nå} fl.)`, color: 'var(--status-now)', bg: 'var(--status-now-bg)' },
+          { key: 'snart', label: `Snart (${counts.snart} fl.)`, color: 'var(--status-soon)', bg: 'var(--status-soon-bg)' },
+          { key: 'vent', label: `Vent (${counts.vent} fl.)`, color: 'var(--status-hold)', bg: 'var(--status-hold-bg)' },
+          { key: 'passert', label: `Passert (${counts.passert} fl.)`, color: 'var(--status-past)', bg: 'var(--status-past-bg)' },
+        ].map(({ key, label, color, bg }) => (
           <button
             key={key}
             onClick={() => setFilter(key as typeof filter)}
@@ -70,11 +71,10 @@ export default function DrinkingWindowView({ wines }: { wines: Wine[] }) {
               padding: '6px 14px',
               borderRadius: 20,
               border: `1px solid ${filter === key ? color : 'var(--border)'}`,
-              background: filter === key ? color + '22' : 'transparent',
+              background: filter === key ? bg : 'transparent',
               color: filter === key ? color : 'var(--text-muted)',
               cursor: 'pointer',
               fontSize: 13,
-              fontFamily: 'sans-serif',
               transition: 'all 0.15s',
             }}
           >
@@ -90,9 +90,9 @@ export default function DrinkingWindowView({ wines }: { wines: Wine[] }) {
             key={t}
             onClick={() => setTab(t)}
             style={{
-              padding: '6px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'sans-serif',
+              padding: '6px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13,
               background: tab === t ? 'var(--accent)' : 'transparent',
-              color: tab === t ? '#0f0e0c' : 'var(--text-muted)',
+              color: tab === t ? 'var(--accent-fg)' : 'var(--text-muted)',
               fontWeight: tab === t ? 600 : 400,
             }}
           >
@@ -118,7 +118,7 @@ function TimelineView({ wines }: { wines: Wine[] }) {
           <tr>
             <th style={{ width: 280 }}>Vin</th>
             {YEARS.map(y => (
-              <th key={y} style={{ textAlign: 'center', width: 40, padding: '8px 2px', fontFamily: 'sans-serif', fontSize: 11 }}>
+              <th key={y} style={{ textAlign: 'center', width: 40, padding: '8px 2px', fontSize: 11 }}>
                 <span style={{ color: y === CURRENT_YEAR ? 'var(--accent)' : 'var(--text-muted)', fontWeight: y === CURRENT_YEAR ? 700 : 400 }}>
                   {y}
                 </span>
@@ -153,7 +153,7 @@ function TimelineView({ wines }: { wines: Wine[] }) {
                   </td>
                 )
               })}
-              <td style={{ textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'sans-serif', fontSize: 13 }}>{wine.quantity}</td>
+              <td style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>{wine.quantity}</td>
             </tr>
           ))}
         </tbody>
@@ -161,7 +161,7 @@ function TimelineView({ wines }: { wines: Wine[] }) {
       {wines.length === 0 && (
         <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Ingen viner i dette filteret</div>
       )}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-muted)', fontFamily: 'sans-serif' }}>
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-muted)' }}>
         <span><span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 2, background: statusColors.before, marginRight: 4, verticalAlign: 'middle' }} />Ikke klar</span>
         <span><span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 2, background: statusColors.peak, marginRight: 4, verticalAlign: 'middle' }} />Drikkevindu</span>
         <span><span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 2, background: statusColors.after, marginRight: 4, verticalAlign: 'middle' }} />Passert</span>
@@ -172,10 +172,10 @@ function TimelineView({ wines }: { wines: Wine[] }) {
 
 function ListView({ items }: { items: { wine: Wine; category: string }[] }) {
   const catLabel: Record<string, { label: string; color: string }> = {
-    nå: { label: 'Drikk nå', color: '#5a9b5a' },
-    snart: { label: 'Klar snart', color: '#c4803a' },
-    vent: { label: 'Legg bort', color: '#6b9eb5' },
-    passert: { label: 'Passert vindu', color: '#9b3a3a' },
+    nå: { label: 'Drikk nå', color: 'var(--status-now)' },
+    snart: { label: 'Klar snart', color: 'var(--status-soon)' },
+    vent: { label: 'Legg bort', color: 'var(--status-hold)' },
+    passert: { label: 'Passert vindu', color: 'var(--status-past)' },
     ukjent: { label: 'Ukjent', color: 'var(--text-muted)' },
   }
 
@@ -205,11 +205,11 @@ function ListView({ items }: { items: { wine: Wine; category: string }[] }) {
                 </td>
                 <td className="hide-mobile" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{wine.producer}</td>
                 <td style={{ color: 'var(--text-muted)' }}>{wine.vintage ?? '—'}</td>
-                <td style={{ fontFamily: 'sans-serif', fontSize: 13, color: 'var(--text-muted)' }}>
+                <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                   {wine.begin_consume && wine.end_consume ? `${wine.begin_consume}–${wine.end_consume}` : '—'}
                 </td>
                 <td style={{ textAlign: 'center' }}>{wine.quantity}</td>
-                <td><span style={{ fontSize: 12, color: cat.color, fontFamily: 'sans-serif' }}>{cat.label}</span></td>
+                <td><span style={{ fontSize: 12, color: cat.color }}>{cat.label}</span></td>
               </tr>
             )
           })}

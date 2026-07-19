@@ -11,7 +11,7 @@ function Row({ label, value }: { label: string; value?: string | number | null }
   if (!value && value !== 0) return null
   return (
     <div style={{ display: 'flex', gap: 16, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-      <div className="info-label" style={{ color: 'var(--text-muted)', fontSize: 13, fontFamily: 'sans-serif', flexShrink: 0 }}>{label}</div>
+      <div className="info-label" style={{ color: 'var(--text-muted)', fontSize: 13, flexShrink: 0 }}>{label}</div>
       <div style={{ fontSize: 14 }}>{value}</div>
     </div>
   )
@@ -21,8 +21,8 @@ function ScoreBadge({ score, label }: { score?: number | null; label: string }) 
   if (!score) return null
   return (
     <div style={{ textAlign: 'center', padding: '12px 16px', background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
-      <div style={{ fontSize: 24, fontWeight: 700, color: score >= 92 ? 'var(--accent)' : 'var(--text)' }}>{Math.round(score)}</div>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'sans-serif', marginTop: 2 }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600, color: score >= 92 ? 'var(--accent)' : 'var(--text)' }}>{Math.round(score)}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{label}</div>
     </div>
   )
 }
@@ -67,7 +67,7 @@ export default function WineDetail({ wine, notes: initialNotes }: { wine: Wine; 
 
   return (
     <div>
-      <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14, marginBottom: 24, fontFamily: 'sans-serif' }}>
+      <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14, marginBottom: 24 }}>
         <ArrowLeft size={14} /> Tilbake til kjelleren
       </Link>
 
@@ -76,7 +76,7 @@ export default function WineDetail({ wine, notes: initialNotes }: { wine: Wine; 
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
             <WineColorDot color={wine.color} />
-            <span style={{ color: 'var(--text-muted)', fontSize: 13, fontFamily: 'sans-serif' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
               {wine.type} · {wine.appellation ?? wine.region ?? wine.country}
             </span>
           </div>
@@ -91,15 +91,15 @@ export default function WineDetail({ wine, notes: initialNotes }: { wine: Wine; 
               gap: 8,
               padding: '8px 16px',
               borderRadius: 8,
-              background: inWindow ? '#5a9b5a22' : CURRENT_YEAR < wine.begin_consume ? '#6b9eb522' : '#9b3a3a22',
-              border: `1px solid ${inWindow ? '#5a9b5a44' : CURRENT_YEAR < wine.begin_consume ? '#6b9eb544' : '#9b3a3a44'}`,
+              background: inWindow ? 'var(--status-now-bg)' : CURRENT_YEAR < wine.begin_consume ? 'var(--status-hold-bg)' : 'var(--status-past-bg)',
+              border: '1px solid var(--border)',
               marginBottom: 24,
               fontSize: 14,
             }}>
-              <span style={{ color: inWindow ? '#5a9b5a' : CURRENT_YEAR < wine.begin_consume ? '#6b9eb5' : '#9b3a3a' }}>
+              <span style={{ color: inWindow ? 'var(--status-now)' : CURRENT_YEAR < wine.begin_consume ? 'var(--status-hold)' : 'var(--status-past)' }}>
                 {inWindow ? 'Innenfor drikkevindu' : CURRENT_YEAR < wine.begin_consume ? `Åpne fra ${wine.begin_consume}` : 'Passert optimalt vindu'}
               </span>
-              <span style={{ color: 'var(--text-muted)', fontSize: 13, fontFamily: 'sans-serif' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                 {wine.begin_consume}–{wine.end_consume}
               </span>
             </div>
@@ -126,7 +126,7 @@ export default function WineDetail({ wine, notes: initialNotes }: { wine: Wine; 
           {/* Personal notes */}
           {wine.personal_notes && (
             <div className="card" style={{ padding: 20, marginBottom: 24 }}>
-              <h3 style={{ fontSize: 14, color: 'var(--text-muted)', fontFamily: 'sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Mine notater (CellarTracker)</h3>
+              <h3 style={{ fontSize: 14, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Mine notater (CellarTracker)</h3>
               <p style={{ fontSize: 14, lineHeight: 1.7 }}>{wine.personal_notes}</p>
             </div>
           )}
@@ -144,20 +144,20 @@ export default function WineDetail({ wine, notes: initialNotes }: { wine: Wine; 
               <div className="card" style={{ padding: 20, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ display: 'flex', gap: 12 }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4, fontFamily: 'sans-serif' }}>Dato</label>
+                    <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Dato</label>
                     <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} />
                   </div>
                   <div style={{ flex: '0 0 120px' }}>
-                    <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4, fontFamily: 'sans-serif' }}>Score (50–100)</label>
+                    <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Score (50–100)</label>
                     <input type="number" min={50} max={100} placeholder="93" value={noteScore} onChange={e => setNoteScore(e.target.value)} />
                   </div>
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4, fontFamily: 'sans-serif' }}>Notat</label>
+                  <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notat</label>
                   <textarea rows={4} placeholder="Beskriv aromer, smak, ettersmak..." value={noteText} onChange={e => setNoteText(e.target.value)} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4, fontFamily: 'sans-serif' }}>Matanbefaling</label>
+                  <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Matanbefaling</label>
                   <input placeholder="f.eks. Entrecôte, sopp, trøffel" value={noteFood} onChange={e => setNoteFood(e.target.value)} />
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -177,7 +177,7 @@ export default function WineDetail({ wine, notes: initialNotes }: { wine: Wine; 
                   <div key={note.id} className="card" style={{ padding: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ fontFamily: 'sans-serif', fontSize: 13, color: 'var(--text-muted)' }}>{note.date_tasted}</span>
+                        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{note.date_tasted}</span>
                         {note.score && (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--accent)', fontWeight: 600 }}>
                             <Star size={12} fill="currentColor" /> {note.score}
@@ -190,7 +190,7 @@ export default function WineDetail({ wine, notes: initialNotes }: { wine: Wine; 
                     </div>
                     {note.notes && <p style={{ fontSize: 14, lineHeight: 1.7, marginBottom: note.food_pairing ? 8 : 0 }}>{note.notes}</p>}
                     {note.food_pairing && (
-                      <p style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'sans-serif' }}>Mat: {note.food_pairing}</p>
+                      <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Mat: {note.food_pairing}</p>
                     )}
                   </div>
                 ))}
@@ -202,7 +202,7 @@ export default function WineDetail({ wine, notes: initialNotes }: { wine: Wine; 
         {/* Sidebar: scores */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card" style={{ padding: 20 }}>
-            <h3 style={{ fontSize: 14, color: 'var(--text-muted)', fontFamily: 'sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 16 }}>Poengsummer</h3>
+            <h3 style={{ fontSize: 14, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 16 }}>Poengsummer</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <ScoreBadge score={wine.personal_score} label="Min score" />
               <ScoreBadge score={wine.community_score} label="Community" />
@@ -220,7 +220,7 @@ export default function WineDetail({ wine, notes: initialNotes }: { wine: Wine; 
 
           {wine.community_notes && (
             <div className="card" style={{ padding: 20 }}>
-              <h3 style={{ fontSize: 14, color: 'var(--text-muted)', fontFamily: 'sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Community-notat</h3>
+              <h3 style={{ fontSize: 14, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Community-notat</h3>
               <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-muted)' }}>{wine.community_notes}</p>
             </div>
           )}

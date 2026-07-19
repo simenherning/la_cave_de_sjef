@@ -4,7 +4,11 @@ import type { Wine } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>
+}) {
   const { data: wines, error } = await supabase
     .from('wines')
     .select('*')
@@ -21,5 +25,16 @@ export default async function HomePage() {
     )
   }
 
-  return <WineInventory wines={(wines ?? []) as Wine[]} />
+  const params = await searchParams
+  return (
+    <WineInventory
+      wines={(wines ?? []) as Wine[]}
+      initialStatus={params.status}
+      initialColor={params.color}
+      initialCountry={params.country}
+      initialRegion={params.region}
+      initialVarietal={params.varietal}
+      initialDecade={params.decade}
+    />
+  )
 }

@@ -1,18 +1,30 @@
 @import "tailwindcss";
 
+/* «Solbleket riviera» — terrakotta, kremhvit og sitrongul (design: La Carta) */
 :root {
-  --bg: #0f0e0c;
-  --bg-card: #1a1814;
-  --bg-hover: #211f1b;
-  --border: #2e2b26;
-  --text: #e8e4dc;
-  --text-muted: #7a7268;
-  --accent: #c4a35a;
-  --accent-hover: #d4b36a;
-  --red-wine: #9b3a3a;
-  --white-wine: #c4a35a;
-  --sparkling: #6b9eb5;
-  --rose: #b56b7a;
+  --bg: #f4ead6;
+  --bg-card: #faf3e4;
+  --bg-hover: #f0e4cd;
+  --border: #e6d7bd;
+  --text: #3d2b21;
+  --text-muted: #9a7d5e;
+  --accent: #b0562f;
+  --accent-hover: #9c4a28;
+  --accent-fg: #f8efdd;      /* lys tekst på terrakotta-flater */
+  --red-wine: #8f3b34;
+  --white-wine: #c69a3f;
+  --sparkling: #c7a24a;
+  --rose: #c07d86;
+  --citrus: #e0a92e;         /* sitrongul aksent */
+  --sea: #3f7d8c;            /* middelhavsblå sekundæraksent */
+  --status-now: #5f7a43;
+  --status-now-bg: #e6ead0;
+  --status-soon: #b45a30;
+  --status-soon-bg: #f2ddca;
+  --status-hold: #3f7d8c;
+  --status-hold-bg: #dae8ec;
+  --status-past: #9b3a3a;
+  --status-past-bg: #efd7d3;
 }
 
 * { box-sizing: border-box; }
@@ -22,12 +34,17 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Georgia', serif;
+  font-family: var(--font-body), 'EB Garamond', Georgia, serif;
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
   /* Dobbelttrykk skal aldri zoome (raske trykk i skanneflyten) — panorering
      og knip-zoom påvirkes ikke. Fjerner også 300 ms trykkforsinkelse. */
   touch-action: manipulation;
+}
+
+h1, h2 {
+  font-family: var(--font-display), 'Cormorant Garamond', Georgia, serif;
+  font-weight: 600;
 }
 
 /* Berøringsskjermer uansett orientering: 16px i skjemafelt hindrer at
@@ -45,6 +62,50 @@ body {
 /* Nav ruller horisontalt på smale skjermer — uten synlig scrollbar */
 .nav-scroll { scrollbar-width: none; }
 .nav-scroll::-webkit-scrollbar { display: none; }
+
+/* «La Carta»-kjellervisning */
+.carta-hero {
+  height: 220px;
+  position: relative;
+  background: repeating-linear-gradient(135deg, #ece0cb 0 12px, #e6d7bd 12px 24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a88b68;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e0d0b4;
+}
+.carta-input {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid #d8c6a6 !important;
+  border-radius: 0 !important;
+  padding: 4px 2px 7px !important;
+}
+.carta-input::placeholder { font-style: italic; color: #b39a76; }
+.carta-right {
+  text-align: right;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-end;
+}
+@media (max-width: 640px) {
+  .carta-hero { height: 150px; }
+  .carta-row { flex-wrap: wrap; }
+  .carta-right {
+    width: 100%;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 12px;
+    text-align: left;
+    padding-left: 21px;
+  }
+}
 
 /* Fullskjerms-overlay for søk under telling: feltet øverst, over tastaturet */
 .full-sheet {
@@ -114,7 +175,7 @@ body {
 
 .btn-primary {
   background: var(--accent);
-  color: #0f0e0c;
+  color: var(--accent-fg);
   font-weight: 600;
 }
 .btn-primary:hover { background: var(--accent-hover); }
@@ -140,7 +201,7 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 
 table { width: 100%; border-collapse: collapse; }
-th { text-align: left; padding: 10px 12px; color: var(--text-muted); font-size: 12px; font-weight: 400; letter-spacing: 0.05em; text-transform: uppercase; border-bottom: 1px solid var(--border); font-family: sans-serif; }
+th { text-align: left; padding: 10px 12px; color: var(--text-muted); font-size: 12px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; border-bottom: 1px solid var(--border); font-family: var(--font-body), 'EB Garamond', serif; }
 td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
 tr:hover td { background: var(--bg-hover); }
 tr:last-child td { border-bottom: none; }

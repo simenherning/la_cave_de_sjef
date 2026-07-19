@@ -19,7 +19,7 @@ export default function Nav() {
       padding: '0 20px',
     }}>
       <div className="nav-scroll" style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 0, overflowX: 'auto', whiteSpace: 'nowrap' }}>
-        <Link href="/" style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 18, marginRight: 20, textDecoration: 'none', padding: '14px 0', flexShrink: 0 }}>
+        <Link href="/" style={{ color: 'var(--accent)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 21, marginRight: 20, textDecoration: 'none', padding: '12px 0', flexShrink: 0 }}>
           La Cave de Sjef
         </Link>
         {links.map(l => (

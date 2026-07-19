@@ -9,14 +9,14 @@ const CURRENT_YEAR = new Date().getFullYear()
 
 function drinkingStatus(wine: Wine): { label: string; color: string; key: string } {
   if (!wine.begin_consume || !wine.end_consume) return { label: '—', color: 'var(--text-muted)', key: '' }
-  if (CURRENT_YEAR > wine.end_consume) return { label: 'Passert', color: '#9b3a3a', key: 'past-window' }
+  if (CURRENT_YEAR > wine.end_consume) return { label: 'Passert', color: 'var(--status-past)', key: 'past-window' }
   if (CURRENT_YEAR < wine.begin_consume) {
-    if (wine.begin_consume - CURRENT_YEAR <= 3) return { label: 'Drikk snart', color: '#c4803a', key: 'drink-soon' }
-    return { label: 'Vent', color: '#6b9eb5', key: 'hold' }
+    if (wine.begin_consume - CURRENT_YEAR <= 3) return { label: 'Drikk snart', color: 'var(--status-soon)', key: 'drink-soon' }
+    return { label: 'Vent', color: 'var(--status-hold)', key: 'hold' }
   }
   const remaining = wine.end_consume - CURRENT_YEAR
-  if (remaining <= 2) return { label: 'Drikk snart', color: '#c4803a', key: 'drink-soon' }
-  return { label: 'Drikk nå', color: '#5a9b5a', key: 'drink-now' }
+  if (remaining <= 2) return { label: 'Drikk snart', color: 'var(--status-soon)', key: 'drink-soon' }
+  return { label: 'Drikk nå', color: 'var(--status-now)', key: 'drink-now' }
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -118,134 +118,128 @@ export default function WineInventory({
 
   const fmt = (n: number) => new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 0 }).format(n)
 
+  const sidePad = 'clamp(16px, 5vw, 64px)'
+
   return (
-    <div>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 4 }}>Vinkjeller</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-            {totalBottles} flasker · NOK {fmt(totalValue)} estimert verdi
-          </p>
+    // «La Carta» — sentrert ark med masthead, understreket verktøylinje og menyliste
+    <div className="card" style={{ maxWidth: 1180, margin: '0 auto', borderRadius: 0, boxShadow: '0 30px 60px -30px rgba(90,55,30,0.35)', overflow: 'hidden' }}>
+      {/* Hero: stilisert plassholder til et ekte kjellerfoto finnes */}
+      <div className="carta-hero">foto: kjeller · riviera · syden</div>
+
+      {/* Masthead */}
+      <div style={{ padding: `44px ${sidePad} 32px`, textAlign: 'center', borderBottom: '3px double #d8a24a' }}>
+        <div style={{ fontSize: 13, letterSpacing: '0.42em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 14 }}>
+          La Cave de Sjef · Anno MMXX
         </div>
-        <Link href="/import" className="btn btn-primary">
-          <Upload size={15} /> Importer CSV
-        </Link>
+        <h1 style={{ fontSize: 'clamp(40px, 8vw, 64px)', lineHeight: 1, margin: '0 0 12px' }}>Vinkjeller</h1>
+        <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 21, color: '#7a6249' }}>
+          {totalBottles} flasker&nbsp;·&nbsp;NOK {fmt(totalValue)} i estimert verdi
+        </div>
       </div>
 
-      {/* Active filter chip */}
-      {activeFilterLabel && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'sans-serif' }}>Filtrert:</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--accent)', color: '#0f0e0c', fontSize: 13, fontFamily: 'sans-serif', fontWeight: 600, padding: '4px 10px', borderRadius: 99 }}>
-            {activeFilterLabel}
-            <Link href="/" style={{ color: '#0f0e0c', display: 'flex', alignItems: 'center' }}>
-              <X size={12} />
-            </Link>
-          </span>
-        </div>
-      )}
-
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: '1 1 240px' }}>
-          <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+      {/* Verktøylinje */}
+      <div style={{ padding: `22px ${sidePad}`, display: 'flex', alignItems: 'center', gap: 20, borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 220px', position: 'relative' }}>
+          <Search size={15} style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', color: '#b39a76' }} />
           <input
-            placeholder="Søk på vin, produsent, region..."
+            className="carta-input"
+            placeholder="Søk på vin, produsent, region …"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ paddingLeft: 32 }}
+            style={{ paddingLeft: 24 }}
           />
         </div>
-        <select value={colorFilter} onChange={e => setColorFilter(e.target.value)} style={{ width: 'auto', flex: '0 0 auto' }}>
+        <select className="carta-input" value={colorFilter} onChange={e => setColorFilter(e.target.value)} style={{ width: 'auto', flex: '0 0 auto', color: '#7a6249' }}>
           <option value="alle">Alle farger</option>
           <option value="red">Rød</option>
           <option value="white">Hvit</option>
           <option value="rosé">Rosé</option>
         </select>
-        <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ width: 'auto', flex: '0 0 auto' }}>
+        <select className="carta-input" value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ width: 'auto', flex: '0 0 auto', color: '#7a6249' }}>
           <option value="producer">Sorter: Produsent</option>
           <option value="vintage">Sorter: Årgang</option>
           <option value="value">Sorter: Verdi</option>
           <option value="score">Sorter: Score</option>
           <option value="window">Sorter: Drikkevindu</option>
         </select>
+        <Link
+          href="/import"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8, border: '1px solid #cf7b4a', borderRadius: 2,
+            color: 'var(--accent)', textDecoration: 'none', fontSize: 13, letterSpacing: '0.14em',
+            textTransform: 'uppercase', padding: '9px 16px',
+          }}
+        >
+          <Upload size={13} /> Importer CSV
+        </Link>
       </div>
 
-      {/* Table */}
-      <div className="card">
+      {/* Aktivt filter */}
+      {activeFilterLabel && (
+        <div style={{ padding: `14px ${sidePad} 0`, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 14, fontStyle: 'italic', color: 'var(--text-muted)' }}>Filtrert:</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--accent)', color: 'var(--accent-fg)', fontSize: 13, fontWeight: 600, padding: '4px 12px', borderRadius: 99 }}>
+            {activeFilterLabel}
+            <Link href="/" style={{ color: 'var(--accent-fg)', display: 'flex', alignItems: 'center' }}>
+              <X size={12} />
+            </Link>
+          </span>
+        </div>
+      )}
+
+      {/* Menyliste */}
+      <div style={{ padding: `12px ${sidePad} 40px` }}>
         {filtered.length === 0 ? (
-          <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
+          <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)', fontStyle: 'italic' }}>
             {wines.length === 0
               ? 'Ingen viner i kjelleren ennå. Importer CSV-filen din for å komme i gang.'
               : 'Ingen viner matcher søket.'}
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Vin</th>
-                  <th className="hide-mobile">Produsent</th>
-                  <th>Åg</th>
-                  <th className="hide-mobile">Region</th>
-                  <th className="hide-mobile">Drue</th>
-                  <th style={{ textAlign: 'center' }}>Ant</th>
-                  <th className="hide-mobile" style={{ textAlign: 'right' }}>Score</th>
-                  <th className="hide-mobile">Vindu</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(wine => {
-                  const status = drinkingStatus(wine)
-                  const score = wine.personal_score ?? wine.community_score
-                  return (
-                    <tr key={wine.id} style={{ cursor: 'pointer' }}>
-                      <td>
-                        <Link href={`/wines/${wine.id}`} style={{ textDecoration: 'none', color: 'var(--text)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <WineColorDot color={wine.color} />
-                            <span style={{ fontWeight: 500 }}>{wine.name}</span>
-                          </div>
-                          {wine.size && wine.size !== '750ml' && (
-                            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 14 }}>{wine.size}</span>
-                          )}
-                        </Link>
-                      </td>
-                      <td className="hide-mobile" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{wine.producer ?? '—'}</td>
-                      <td style={{ color: 'var(--text-muted)' }}>{wine.vintage ?? '—'}</td>
-                      <td className="hide-mobile" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{wine.appellation ?? wine.region ?? '—'}</td>
-                      <td className="hide-mobile" style={{ color: 'var(--text-muted)', fontSize: 13 }}>{wine.master_varietal ?? wine.varietal ?? '—'}</td>
-                      <td style={{ textAlign: 'center' }}>{wine.quantity}</td>
-                      <td className="hide-mobile" style={{ textAlign: 'right' }}>
-                        {score ? (
-                          <span style={{ fontVariantNumeric: 'tabular-nums', color: score >= 92 ? 'var(--accent)' : 'var(--text)' }}>
-                            {Math.round(score)}
-                          </span>
-                        ) : '—'}
-                      </td>
-                      <td className="hide-mobile" style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'sans-serif' }}>
-                        {wine.begin_consume && wine.end_consume
-                          ? `${wine.begin_consume}–${wine.end_consume}`
-                          : '—'}
-                      </td>
-                      <td>
-                        <span style={{ fontSize: 12, color: status.color, fontFamily: 'sans-serif' }}>
-                          {status.label}
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+          filtered.map(wine => {
+            const status = drinkingStatus(wine)
+            const score = wine.personal_score ?? wine.community_score
+            return (
+              <Link
+                key={wine.id}
+                href={`/wines/${wine.id}`}
+                className="carta-row"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 18, padding: '18px 0',
+                  borderBottom: '1px solid var(--border)', textDecoration: 'none', color: 'var(--text)',
+                }}
+              >
+                <WineColorDot color={wine.color} />
+                <div style={{ flex: '1 1 0%', minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#a5623a', marginBottom: 2 }}>
+                    {wine.producer ?? '—'}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 25, lineHeight: 1.15 }}>
+                    {wine.name}
+                    {wine.size && wine.size !== '750ml' && (
+                      <span style={{ fontSize: 15, color: 'var(--text-muted)', marginLeft: 8 }}>{wine.size}</span>
+                    )}
+                  </div>
+                  <div style={{ fontStyle: 'italic', fontSize: 16, color: 'var(--text-muted)', marginTop: 2 }}>
+                    {[wine.appellation ?? wine.region, wine.master_varietal ?? wine.varietal].filter(Boolean).join(' · ')}
+                    {wine.begin_consume && wine.end_consume ? ` · drikkevindu ${wine.begin_consume}–${wine.end_consume}` : ''}
+                  </div>
+                </div>
+                <div className="carta-right">
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 26 }}>{wine.vintage ?? 'NV'}</div>
+                  <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
+                    {wine.quantity} fl.{score ? <> · <span style={{ fontWeight: 600, color: score >= 92 ? 'var(--accent)' : 'var(--text)' }}>{Math.round(score)}</span></> : ''}
+                  </div>
+                  <div style={{ fontStyle: 'italic', fontSize: 15, color: status.color }}>{status.label}</div>
+                </div>
+              </Link>
+            )
+          })
         )}
+        <div style={{ fontStyle: 'italic', fontSize: 15, color: 'var(--text-muted)', marginTop: 18 }}>
+          {filtered.length} {filtered.length === 1 ? 'vin' : 'viner'} i utvalget
+        </div>
       </div>
-      <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 12, fontFamily: 'sans-serif' }}>
-        {filtered.length} {filtered.length === 1 ? 'vin' : 'viner'}
-      </p>
     </div>
   )
 }

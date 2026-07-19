@@ -193,7 +193,7 @@ export default function Scanner({ paused, onDetect }: Props) {
       {!error && (
         <div style={{
           position: 'absolute', left: '10%', right: '10%', top: '38%', height: '24%',
-          border: '2px solid rgba(196,163,90,0.8)', borderRadius: 8, pointerEvents: 'none',
+          border: '2px solid rgba(224,169,46,0.9)', borderRadius: 8, pointerEvents: 'none',
         }} />
       )}
       {torchSupported && (
@@ -212,7 +212,7 @@ export default function Scanner({ paused, onDetect }: Props) {
       {engine && !error && (
         <div style={{
           position: 'absolute', bottom: 10, left: 10, fontSize: 11, color: 'rgba(255,255,255,0.6)',
-          background: 'rgba(0,0,0,0.45)', padding: '2px 8px', borderRadius: 10, fontFamily: 'sans-serif',
+          background: 'rgba(0,0,0,0.45)', padding: '2px 8px', borderRadius: 10,
         }}>
           {engine === 'native' ? 'Native skanner' : 'ZXing'}
         </div>

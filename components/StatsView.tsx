@@ -10,9 +10,9 @@ function StatCard({ label, value, sub, href }: { label: string; value: string | 
     <div className="card" style={{ padding: '20px 24px', cursor: href ? 'pointer' : 'default', transition: 'opacity 0.15s' }}
       onMouseEnter={e => { if (href) e.currentTarget.style.opacity = '0.8' }}
       onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}>
-      <div style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 700 }}>{value}</div>
-      {sub && <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4, fontFamily: 'sans-serif' }}>{sub}</div>}
+      <div style={{ color: 'var(--text-muted)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 600, lineHeight: 1.1 }}>{value}</div>
+      {sub && <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4, fontStyle: 'italic' }}>{sub}</div>}
     </div>
   )
   return href ? <Link href={href} style={{ textDecoration: 'none', color: 'inherit' }}>{inner}</Link> : inner
@@ -40,7 +40,7 @@ function BarChart({ data, title, paramKey }: { data: [string, number][]; title: 
                 alignItems: 'center',
                 paddingLeft: 8,
               }}>
-                <span style={{ fontSize: 11, color: '#0f0e0c', fontFamily: 'sans-serif', fontWeight: 600, whiteSpace: 'nowrap' }}>{count}</span>
+                <span style={{ fontSize: 11, color: 'var(--accent-fg)', fontWeight: 600, whiteSpace: 'nowrap' }}>{count}</span>
               </div>
             </div>
           </Link>
@@ -113,8 +113,8 @@ export default function StatsView({ wines }: { wines: Wine[] }) {
               onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
               <WineColorDot color={color} />
               <span style={{ fontSize: 14 }}>{color}</span>
-              <span style={{ color: 'var(--text-muted)', fontSize: 13, fontFamily: 'sans-serif' }}>{count} fl.</span>
-              <span style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'sans-serif' }}>({Math.round(count / total * 100)}%)</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{count} fl.</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>({Math.round(count / total * 100)}%)</span>
             </Link>
           ))}
         </div>
