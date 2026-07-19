@@ -113,12 +113,6 @@ export default function WineInventory({
     return list
   }, [wines, search, colorFilter, sortBy])
 
-  const totalBottles = wines.filter(w => w.quantity > 0).reduce((s, w) => s + w.quantity, 0)
-  // estimated_value er per flaske (CTs Value/Valuation-kolonner) — gang med antall.
-  const totalValue = wines.filter(w => w.quantity > 0).reduce((s, w) => s + (w.estimated_value ?? 0) * w.quantity, 0)
-
-  const fmt = (n: number) => new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 0 }).format(n)
-
   const sidePad = 'clamp(16px, 5vw, 64px)'
 
   return (
@@ -142,10 +136,7 @@ export default function WineInventory({
         <div style={{ fontSize: 13, letterSpacing: '0.42em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 14 }}>
           La Cave de Sjef · Anno MMXX
         </div>
-        <h1 style={{ fontSize: 'clamp(40px, 8vw, 64px)', lineHeight: 1, margin: '0 0 12px' }}>Vinkjeller</h1>
-        <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 21, color: '#7a6249' }}>
-          {totalBottles} flasker&nbsp;·&nbsp;NOK {fmt(totalValue)} i estimert verdi
-        </div>
+        <h1 style={{ fontSize: 'clamp(40px, 8vw, 64px)', lineHeight: 1, margin: 0 }}>Vinkjeller</h1>
       </div>
 
       {/* Verktøylinje */}
