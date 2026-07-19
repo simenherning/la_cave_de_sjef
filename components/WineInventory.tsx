@@ -1,6 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Search, Upload, X } from 'lucide-react'
 import type { Wine } from '@/lib/types'
 import WineColorDot from './WineColorDot'
@@ -123,8 +124,18 @@ export default function WineInventory({
   return (
     // «La Carta» — sentrert ark med masthead, understreket verktøylinje og menyliste
     <div className="card" style={{ maxWidth: 1180, margin: '0 auto', borderRadius: 0, boxShadow: '0 30px 60px -30px rgba(90,55,30,0.35)', overflow: 'hidden' }}>
-      {/* Hero: stilisert plassholder til et ekte kjellerfoto finnes */}
-      <div className="carta-hero">foto: kjeller · riviera · syden</div>
+      {/* Hero: vinmarkene i Fleurie — stripene bak fungerer som lastebakgrunn */}
+      <div className="carta-hero">
+        <Image
+          src="/hero-kjeller.jpg"
+          alt="Vinmarker i Fleurie med kapellet La Madone på toppen"
+          fill
+          priority
+          sizes="(max-width: 1180px) 100vw, 1180px"
+          style={{ objectFit: 'cover', objectPosition: 'center 22%' }}
+        />
+        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 90, background: 'linear-gradient(to top, rgba(58,35,22,0.55), transparent)', pointerEvents: 'none' }} />
+      </div>
 
       {/* Masthead */}
       <div style={{ padding: `44px ${sidePad} 32px`, textAlign: 'center', borderBottom: '3px double #d8a24a' }}>
