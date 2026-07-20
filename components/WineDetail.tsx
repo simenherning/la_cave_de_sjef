@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Trash2, Star } from 'lucide-react'
-import type { Wine, TastingNote } from '@/lib/types'
+import type { Wine, TastingNote, ExternalNote } from '@/lib/types'
 import WineColorDot from './WineColorDot'
 
 const CURRENT_YEAR = new Date().getFullYear()
@@ -27,7 +27,7 @@ function ScoreBadge({ score, label }: { score?: number | null; label: string }) 
   )
 }
 
-export default function WineDetail({ wine, notes: initialNotes }: { wine: Wine; notes: TastingNote[] }) {
+export default function WineDetail({ wine, notes: initialNotes, externalNotes }: { wine: Wine; notes: TastingNote[]; externalNotes: ExternalNote[] }) {
   const [notes, setNotes] = useState(initialNotes)
   const [showForm, setShowForm] = useState(false)
   const [noteDate, setNoteDate] = useState(new Date().toISOString().split('T')[0])
@@ -191,6 +191,50 @@ export default function WineDetail({ wine, notes: initialNotes }: { wine: Wine; 
                     {note.notes && <p style={{ fontSize: 14, lineHeight: 1.7, marginBottom: note.food_pairing ? 8 : 0 }}>{note.notes}</p>}
                     {note.food_pairing && (
                       <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Mat: {note.food_pairing}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Innhentede notater fra eksterne kilder (CT, kritikere, Vivino …) */}
+          <div style={{ marginTop: 32 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>Innhentede notater</h2>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: 16 }}>
+              Smaksnotater og omtaler samlet fra CellarTracker og andre kilder — grunnlag for
+              drikkevindu, forventet smak og mat-match.
+            </p>
+            {externalNotes.length === 0 ? (
+              <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                Ingen innhentede notater ennå
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {externalNotes.map(n => (
+                  <div key={n.id} className="card" style={{ padding: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, marginBottom: 6, flexWrap: 'wrap' }}>
+                      <div style={{ fontWeight: 600, fontSize: 12, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#a5623a' }}>
+                        {n.source}{n.author ? ` · ${n.author}` : ''}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+                        {n.note_date && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{n.note_date}</span>}
+                        {n.score && <span style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 14 }}>{n.score}</span>}
+                      </div>
+                    </div>
+                    {n.note && <p style={{ fontSize: 14, lineHeight: 1.7, marginBottom: 8 }}>{n.note}</p>}
+                    {(n.drink_from || n.drink_to || n.food_pairing) && (
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {(n.drink_from || n.drink_to) && (
+                          <span>Foreslått drikkevindu: {n.drink_from ?? '…'}–{n.drink_to ?? '…'}</span>
+                        )}
+                        {n.food_pairing && <span>Mat: {n.food_pairing}</span>}
+                      </div>
+                    )}
+                    {n.source_url && (
+                      <a href={n.source_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--sea)', textDecoration: 'none' }}>
+                        Kilde ↗
+                      </a>
                     )}
                   </div>
                 ))}

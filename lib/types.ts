@@ -56,6 +56,21 @@ export interface TastingNote {
   created_at: string
 }
 
+export interface ExternalNote {
+  id: number
+  wine_id: number
+  source: string
+  source_url: string | null
+  author: string | null
+  note_date: string | null
+  score: string | null
+  note: string | null
+  drink_from: number | null
+  drink_to: number | null
+  food_pairing: string | null
+  created_at: string
+}
+
 export interface CellarTarget {
   id: number
   label: string
