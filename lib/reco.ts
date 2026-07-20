@@ -19,6 +19,7 @@ export interface RecoWine {
   appellation: string | null
   quantity: number
   purchase_price: number | null
+  estimated_value: number | null
   begin_consume: number | null
   end_consume: number | null
   score: number | null          // beste tilgjengelige: personlig ?? community ?? snitt av innhentede
@@ -39,9 +40,16 @@ export function matchesDrinkChoice(w: RecoWine, choice: DrinkChoice): boolean {
   return color === 'white' || color === 'orange' || color === 'rosé'
 }
 
+// Innkjøpspris når den er registrert; ellers verdiestimatet (24 viner i CT
+// mangler innkjøpspris — en Krug skal ikke havne under «billig» av den grunn)
+export function effectivePrice(w: RecoWine): { price: number; estimated: boolean } {
+  if (w.purchase_price && w.purchase_price > 0) return { price: w.purchase_price, estimated: false }
+  return { price: w.estimated_value ?? 0, estimated: true }
+}
+
 export function matchesPriceChoice(w: RecoWine, choice: PriceChoice): boolean {
-  const p = w.purchase_price ?? 0
-  return choice === 'dyr' ? p >= 1000 : p < 1000
+  const { price } = effectivePrice(w)
+  return choice === 'dyr' ? price >= 1000 : price < 1000
 }
 
 /* ---------- Drikkeklarhet ---------- */

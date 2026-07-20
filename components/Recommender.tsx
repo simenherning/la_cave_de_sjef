@@ -7,7 +7,7 @@ import WineColorDot from './WineColorDot'
 import {
   type RecoWine, type DrinkChoice, type PriceChoice,
   matchesDrinkChoice, matchesPriceChoice, textFilter,
-  sortDrinkOnly, sortForFood, readinessLabel,
+  sortDrinkOnly, sortForFood, readinessLabel, effectivePrice,
 } from '@/lib/reco'
 
 type Mode = 'mat' | 'drikke'
@@ -209,6 +209,7 @@ export default function Recommender({ wines }: { wines: RecoWine[] }) {
 
 function ResultRow({ wine, rank, matchReason, matchPoints }: { wine: RecoWine; rank: number; matchReason?: string | null; matchPoints?: number }) {
   const status = readinessLabel(wine)
+  const { price, estimated } = effectivePrice(wine)
   return (
     <Link
       href={`/wines/${wine.id}`}
@@ -247,7 +248,7 @@ function ResultRow({ wine, rank, matchReason, matchPoints }: { wine: RecoWine; r
         <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
           {wine.quantity} fl.
           {wine.score ? <> · <span style={{ fontWeight: 600, color: wine.score >= 92 ? 'var(--accent)' : 'var(--text)' }}>{Math.round(wine.score)}</span></> : ''}
-          {wine.purchase_price ? <> · {Math.round(wine.purchase_price)} kr</> : ''}
+          {price > 0 ? <> · {estimated ? '≈ ' : ''}{Math.round(price)} kr</> : ''}
         </div>
         <div style={{ fontStyle: 'italic', fontSize: 15, color: status.color }}>{status.label}</div>
       </div>

@@ -70,6 +70,7 @@ export default async function HomePage() {
       appellation: w.appellation,
       quantity: w.quantity,
       purchase_price: w.purchase_price,
+      estimated_value: w.estimated_value,
       begin_consume: w.begin_consume,
       end_consume: w.end_consume,
       score: w.personal_score ?? w.community_score ?? (ext ? ext.sum / ext.n : null),
