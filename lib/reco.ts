@@ -40,16 +40,16 @@ export function matchesDrinkChoice(w: RecoWine, choice: DrinkChoice): boolean {
   return color === 'white' || color === 'orange' || color === 'rosé'
 }
 
-// Innkjøpspris når den er registrert; ellers verdiestimatet (24 viner i CT
-// mangler innkjøpspris — en Krug skal ikke havne under «billig» av den grunn)
-export function effectivePrice(w: RecoWine): { price: number; estimated: boolean } {
-  if (w.purchase_price && w.purchase_price > 0) return { price: w.purchase_price, estimated: false }
-  return { price: w.estimated_value ?? 0, estimated: true }
+// Flaskens verdi (CT-estimatet) styrer dyr/billig-skillet — innkjøpsprisen
+// kan være 0 for gaver og speiler uansett ikke hva flasken er verdt i dag.
+export function bottleValue(w: RecoWine): number {
+  if (w.estimated_value && w.estimated_value > 0) return w.estimated_value
+  return w.purchase_price ?? 0
 }
 
 export function matchesPriceChoice(w: RecoWine, choice: PriceChoice): boolean {
-  const { price } = effectivePrice(w)
-  return choice === 'dyr' ? price >= 1000 : price < 1000
+  const v = bottleValue(w)
+  return choice === 'dyr' ? v >= 1000 : v < 1000
 }
 
 /* ---------- Drikkeklarhet ---------- */

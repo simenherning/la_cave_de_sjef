@@ -7,13 +7,12 @@ import WineColorDot from './WineColorDot'
 import {
   type RecoWine, type DrinkChoice, type PriceChoice,
   matchesDrinkChoice, matchesPriceChoice, textFilter,
-  sortDrinkOnly, sortForFood, readinessLabel, effectivePrice,
+  sortDrinkOnly, sortForFood, readinessLabel, bottleValue,
 } from '@/lib/reco'
 
 type Mode = 'mat' | 'drikke'
 
 const DRINK_LABELS: Record<DrinkChoice, string> = { red: 'Rødt', white: 'Hvitt', bubbles: 'Bobler' }
-const PRICE_LABELS: Record<PriceChoice, string> = { dyr: 'Dyr (over 1000 kr)', billig: 'Billig (under 1000 kr)' }
 
 // Store valgknapper i La Carta-stil
 function ChoiceButton({ label, sub, onClick }: { label: string; sub?: string; onClick: () => void }) {
@@ -135,8 +134,8 @@ export default function Recommender({ wines }: { wines: RecoWine[] }) {
       {/* Steg 2: dyr / billig */}
       {step === 2 && (
         <div style={{ padding: `40px ${sidePad} 56px`, display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <ChoiceButton label="Dyr" sub="over 1000 kr" onClick={() => setPrice('dyr')} />
-          <ChoiceButton label="Billig" sub="under 1000 kr" onClick={() => setPrice('billig')} />
+          <ChoiceButton label="Dyr" sub="verdi over 1000 kr" onClick={() => setPrice('dyr')} />
+          <ChoiceButton label="Billig" sub="verdi under 1000 kr" onClick={() => setPrice('billig')} />
         </div>
       )}
 
@@ -209,7 +208,7 @@ export default function Recommender({ wines }: { wines: RecoWine[] }) {
 
 function ResultRow({ wine, rank, matchReason, matchPoints }: { wine: RecoWine; rank: number; matchReason?: string | null; matchPoints?: number }) {
   const status = readinessLabel(wine)
-  const { price, estimated } = effectivePrice(wine)
+  const value = bottleValue(wine)
   return (
     <Link
       href={`/wines/${wine.id}`}
@@ -248,7 +247,7 @@ function ResultRow({ wine, rank, matchReason, matchPoints }: { wine: RecoWine; r
         <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
           {wine.quantity} fl.
           {wine.score ? <> · <span style={{ fontWeight: 600, color: wine.score >= 92 ? 'var(--accent)' : 'var(--text)' }}>{Math.round(wine.score)}</span></> : ''}
-          {price > 0 ? <> · {estimated ? '≈ ' : ''}{Math.round(price)} kr</> : ''}
+          {value > 0 ? <> · {Math.round(value)} kr</> : ''}
         </div>
         <div style={{ fontStyle: 'italic', fontSize: 15, color: status.color }}>{status.label}</div>
       </div>
