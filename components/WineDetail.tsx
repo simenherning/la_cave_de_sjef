@@ -67,7 +67,7 @@ export default function WineDetail({ wine, notes: initialNotes, externalNotes }:
 
   return (
     <div>
-      <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14, marginBottom: 24 }}>
+      <Link href="/kjeller" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14, marginBottom: 24 }}>
         <ArrowLeft size={14} /> Tilbake til kjelleren
       </Link>
 

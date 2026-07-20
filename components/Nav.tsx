@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const links = [
-  { href: '/', label: 'Kjeller' },
+  { href: '/', label: 'Hva vil du drikke?' },
+  { href: '/kjeller', label: 'Kjeller' },
   { href: '/stats', label: 'Statistikk' },
   { href: '/drinking-window', label: 'Drikkevindu' },
   { href: '/purchase-plan', label: 'Innkjøpsplan' },

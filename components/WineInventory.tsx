@@ -182,7 +182,7 @@ export default function WineInventory({
           <span style={{ fontSize: 14, fontStyle: 'italic', color: 'var(--text-muted)' }}>Filtrert:</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--accent)', color: 'var(--accent-fg)', fontSize: 13, fontWeight: 600, padding: '4px 12px', borderRadius: 99 }}>
             {activeFilterLabel}
-            <Link href="/" style={{ color: 'var(--accent-fg)', display: 'flex', alignItems: 'center' }}>
+            <Link href="/kjeller" style={{ color: 'var(--accent-fg)', display: 'flex', alignItems: 'center' }}>
               <X size={12} />
             </Link>
           </span>

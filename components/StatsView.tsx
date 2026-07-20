@@ -25,7 +25,7 @@ function BarChart({ data, title, paramKey }: { data: [string, number][]; title: 
       <h3 style={{ marginBottom: 20, fontSize: 15, fontWeight: 600 }}>{title}</h3>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {data.slice(0, 12).map(([label, count]) => (
-          <Link key={label} href={`/?${paramKey}=${encodeURIComponent(label)}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: 12 }}
+          <Link key={label} href={`/kjeller?${paramKey}=${encodeURIComponent(label)}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: 12 }}
             onMouseEnter={e => e.currentTarget.style.opacity = '0.75'}
             onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
             <div style={{ width: 140, fontSize: 13, textAlign: 'right', color: 'var(--text-muted)', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
@@ -108,7 +108,7 @@ export default function StatsView({ wines }: { wines: Wine[] }) {
         <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 600 }}>Farge</h3>
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
           {byColor.map(([color, count]) => (
-            <Link key={color} href={`/?color=${encodeURIComponent(color)}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}
+            <Link key={color} href={`/kjeller?color=${encodeURIComponent(color)}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}
               onMouseEnter={e => e.currentTarget.style.opacity = '0.75'}
               onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
               <WineColorDot color={color} />
