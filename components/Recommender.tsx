@@ -68,7 +68,7 @@ export default function Recommender({ wines }: { wines: RecoWine[] }) {
     [pool, mode, refine],
   )
   const foodResults = useMemo(
-    () => (mode === 'mat' && foodSubmitted ? sortForFood(pool, foodSubmitted) : []),
+    () => (mode === 'mat' && foodSubmitted ? sortForFood(pool, foodSubmitted) : { results: [], excluded: [] }),
     [pool, mode, foodSubmitted],
   )
 
@@ -184,21 +184,29 @@ export default function Recommender({ wines }: { wines: RecoWine[] }) {
       {/* Resultatliste */}
       {step === 4 && (mode === 'drikke' || foodSubmitted) && (
         <div style={{ padding: `12px ${sidePad} 40px` }}>
-          {(mode === 'drikke' ? drinkResults.length === 0 : foodResults.length === 0) ? (
+          {(mode === 'drikke' ? drinkResults.length === 0 : foodResults.results.length === 0) ? (
             <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)', fontStyle: 'italic' }}>
               Ingen viner matcher valgene dine. Prøv å endre et valg over.
+              {mode === 'mat' && foodResults.excluded.length > 0 && (
+                <div style={{ fontSize: 14, marginTop: 8 }}>
+                  ({foodResults.excluded.length} viner ble utelatt fordi de kræsjer med retten — f.eks. {foodResults.excluded[0].veto})
+                </div>
+              )}
             </div>
           ) : mode === 'drikke' ? (
             drinkResults.map((wine, i) => <ResultRow key={wine.id} wine={wine} rank={i + 1} />)
           ) : (
-            foodResults.map(({ wine, match }, i) => (
+            foodResults.results.map(({ wine, match }, i) => (
               <ResultRow key={wine.id} wine={wine} rank={i + 1} matchReason={match.reason} matchPoints={match.points} />
             ))
           )}
           <div style={{ fontStyle: 'italic', fontSize: 15, color: 'var(--text-muted)', marginTop: 18 }}>
-            {mode === 'drikke' ? drinkResults.length : foodResults.length} forslag · kun viner som er
-            drikkeklare nå eller innen 2 år · sortert etter{' '}
-            {mode === 'drikke' ? 'drikkeklarhet og poeng' : 'drikkeklarhet, matmatch og poeng'} ·{' '}
+            {mode === 'drikke' ? drinkResults.length : foodResults.results.length} forslag · kun viner som er
+            drikkeklare nå eller innen 2 år
+            {mode === 'mat' && foodResults.excluded.length > 0 && (
+              <> · {foodResults.excluded.length} utelatt pga. kræsj med retten ({foodResults.excluded[0].veto})</>
+            )}{' '}
+            · sortert etter {mode === 'drikke' ? 'drikkeklarhet og poeng' : 'drikkeklarhet, matmatch og poeng'} ·{' '}
             <Link href="/kjeller" style={{ color: 'var(--accent)' }}>se hele kjelleren</Link>
           </div>
         </div>
