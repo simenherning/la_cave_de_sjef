@@ -69,6 +69,13 @@ export function readinessRank(w: RecoWine): number {
   return 60 + Math.min(CURRENT_YEAR - to, 30) // 60+: passert vindu
 }
 
+// Forslagene viser bare viner som er drikkeklare nå eller innen 2 år —
+// en vin med vindu fra 2028 vises i 2026, men ikke i 2025.
+export function withinReadinessHorizon(w: RecoWine): boolean {
+  if (!w.begin_consume) return true // ukjent vindu: ikke utelukk
+  return w.begin_consume <= CURRENT_YEAR + 2
+}
+
 export function readinessLabel(w: RecoWine): { label: string; color: string } {
   const from = w.begin_consume
   const to = w.end_consume

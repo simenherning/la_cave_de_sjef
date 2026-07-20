@@ -7,7 +7,7 @@ import WineColorDot from './WineColorDot'
 import {
   type RecoWine, type DrinkChoice, type PriceChoice,
   matchesDrinkChoice, matchesPriceChoice, textFilter,
-  sortDrinkOnly, sortForFood, readinessLabel, bottleValue,
+  sortDrinkOnly, sortForFood, readinessLabel, bottleValue, withinReadinessHorizon,
 } from '@/lib/reco'
 
 type Mode = 'mat' | 'drikke'
@@ -57,7 +57,7 @@ export default function Recommender({ wines }: { wines: RecoWine[] }) {
 
   // Grunnutvalg etter steg 1 og 2
   const pool = useMemo(() => {
-    let list = wines.filter(w => w.quantity > 0)
+    let list = wines.filter(w => w.quantity > 0 && withinReadinessHorizon(w))
     if (drink) list = list.filter(w => matchesDrinkChoice(w, drink))
     if (price) list = list.filter(w => matchesPriceChoice(w, price))
     return list
@@ -196,7 +196,8 @@ export default function Recommender({ wines }: { wines: RecoWine[] }) {
             ))
           )}
           <div style={{ fontStyle: 'italic', fontSize: 15, color: 'var(--text-muted)', marginTop: 18 }}>
-            {mode === 'drikke' ? drinkResults.length : foodResults.length} forslag · sortert etter{' '}
+            {mode === 'drikke' ? drinkResults.length : foodResults.length} forslag · kun viner som er
+            drikkeklare nå eller innen 2 år · sortert etter{' '}
             {mode === 'drikke' ? 'drikkeklarhet og poeng' : 'drikkeklarhet, matmatch og poeng'} ·{' '}
             <Link href="/kjeller" style={{ color: 'var(--accent)' }}>se hele kjelleren</Link>
           </div>
